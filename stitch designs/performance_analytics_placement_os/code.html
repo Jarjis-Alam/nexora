@@ -1,0 +1,365 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Performance Analytics - Placement OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "inverse-on-surface": "#313030",
+                        "on-secondary-fixed": "#002113",
+                        "surface-container-high": "#2a2a2a",
+                        "on-surface-variant": "#c2c6d6",
+                        "on-tertiary": "#502400",
+                        "on-primary-fixed-variant": "#004395",
+                        "on-tertiary-container": "#461f00",
+                        "on-background": "#e5e2e1",
+                        "primary-fixed": "#d8e2ff",
+                        "surface-container-highest": "#353534",
+                        "background": "#131313",
+                        "on-tertiary-fixed": "#311400",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-error": "#690005",
+                        "surface-tint": "#adc6ff",
+                        "outline-variant": "#424754",
+                        "primary": "#adc6ff",
+                        "error": "#ffb4ab",
+                        "surface": "#131313",
+                        "surface-dim": "#131313",
+                        "tertiary": "#ffb786",
+                        "primary-container": "#4d8eff",
+                        "on-surface": "#e5e2e1",
+                        "error-container": "#93000a",
+                        "inverse-primary": "#005ac2",
+                        "surface-bright": "#3a3939",
+                        "on-primary": "#002e6a",
+                        "on-error-container": "#ffdad6",
+                        "inverse-surface": "#e5e2e1",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-secondary": "#003824",
+                        "on-primary-fixed": "#001a42",
+                        "outline": "#8c909f",
+                        "surface-container": "#201f1f",
+                        "surface-container-low": "#1c1b1b",
+                        "on-secondary-container": "#00311f",
+                        "on-primary-container": "#00285d",
+                        "tertiary-container": "#df7412",
+                        "primary-fixed-dim": "#adc6ff",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "tertiary-fixed": "#ffdcc6",
+                        "on-secondary-fixed-variant": "#005236",
+                        "secondary-container": "#00a572",
+                        "secondary": "#4edea3",
+                        "surface-variant": "#353534",
+                        "secondary-fixed": "#6ffbbe"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    spacing: {
+                        "unit": "4px",
+                        "margin-desktop": "64px",
+                        "container-max": "1200px",
+                        "margin-mobile": "16px",
+                        "gutter": "24px"
+                    },
+                    fontFamily: {
+                        "label-xs": ["JetBrains Mono"],
+                        "headline-xl": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "code-sm": ["JetBrains Mono"],
+                        "headline-lg": ["Geist"],
+                        "body-sm": ["Geist"],
+                        "title-md": ["Geist"],
+                        "body-md": ["Geist"]
+                    },
+                    fontSize: {
+                        "label-xs": ["11px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500" }],
+                        "headline-xl": ["40px", { "lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-lg-mobile": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "code-sm": ["13px", { "lineHeight": "1.6", "fontWeight": "400" }],
+                        "headline-lg": ["32px", { "lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "title-md": ["20px", { "lineHeight": "1.5", "fontWeight": "500" }],
+                        "body-md": ["16px", { "lineHeight": "1.6", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        /* Custom Scrollbar for technical feel */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #0e0e0e; }
+        ::-webkit-scrollbar-thumb { background: #353534; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #424754; }
+        
+        /* Grid background pattern */
+        .tech-grid {
+            background-size: 24px 24px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        }
+        
+        /* Progress Circle Base */
+        .progress-ring__circle {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
+</head>
+<body class="bg-surface-container-lowest text-on-surface h-screen flex overflow-hidden font-body-md tech-grid">
+<!-- SideNavBar (Shared Component) -->
+<aside class="bg-surface dark:bg-surface font-label-xs text-label-xs docked h-screen left-0 w-64 border-r border-outline-variant flex flex-col h-full py-6 px-4 gap-4 flex-shrink-0 z-20">
+<!-- Header -->
+<div class="mb-8 px-2 flex items-center gap-3">
+<div class="w-8 h-8 rounded bg-primary-container flex items-center justify-center text-on-primary-container font-headline-lg">L</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface text-[18px] leading-tight">Placement OS</h1>
+
+</div>
+</div>
+<!-- Navigation Links -->
+<nav class="flex-1 flex flex-col gap-2">
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95 duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+                Dashboard
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95 duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[18px]">assignment</span>
+                Tests
+            </a>
+<!-- Active State Navigation -->
+<a class="flex items-center gap-3 px-4 py-3 bg-primary-container text-on-primary-container font-bold rounded-xl hover:bg-surface-container-highest transition-colors active:scale-95 duration-150" href="#">
+<span class="material-symbols-outlined text-[18px]">insights</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95 duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[18px]">person</span>
+                Profile
+            </a>
+<a class="flex items-center gap-3 px-4 py-3 text-on-surface-variant hover:bg-surface-container-high hover:bg-surface-container-highest transition-colors active:scale-95 duration-150 rounded-xl" href="#">
+<span class="material-symbols-outlined text-[18px]">quiz</span>
+                Assessment
+            </a>
+</nav>
+<!-- CTA & Footer -->
+<div class="mt-auto flex flex-col gap-4 pt-4 border-t border-outline-variant">
+<button class="w-full py-3 bg-primary-container text-on-primary-container font-label-xs rounded font-bold hover:opacity-90 transition-opacity flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                Start Practice
+            </button>
+<div class="flex flex-col gap-1">
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">menu_book</span>
+                    Docs
+                </a>
+<a class="flex items-center gap-3 px-4 py-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]">help_outline</span>
+                    Help
+                </a>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-screen overflow-y-auto relative z-10">
+<div class="px-margin-desktop py-12 max-w-container-max mx-auto w-full flex flex-col gap-8">
+<!-- Header Section -->
+<header class="flex justify-between items-end">
+<div>
+<h2 class="font-headline-xl text-headline-xl text-on-surface mb-2">Performance Analytics</h2>
+<p class="font-body-md text-body-md text-on-surface-variant">Understand your strengths, weaknesses, speed, and progress.</p>
+</div>
+<div class="flex items-center gap-4">
+<div class="relative">
+<select class="appearance-none bg-surface border border-outline-variant text-on-surface font-label-xs px-4 py-2 pr-10 rounded focus:border-primary focus:ring-0 outline-none cursor-pointer">
+<option>All Time</option>
+<option>Last 30 Days</option>
+<option>Last 7 Days</option>
+</select>
+<span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+<button class="bg-surface border border-outline-variant p-2 rounded hover:text-primary transition-colors text-on-surface-variant">
+<span class="material-symbols-outlined">download</span>
+</button>
+</div>
+</header>
+<!-- Overview Metrics Grid -->
+<section class="grid grid-cols-5 gap-gutter">
+<!-- Card 1 -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Avg Score</span>
+<span class="material-symbols-outlined text-primary text-[18px]">analytics</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-code-sm text-code-sm text-3xl font-bold text-on-surface">72%</span>
+<span class="font-label-xs text-label-xs text-secondary flex items-center"><span class="material-symbols-outlined text-[12px]">trending_up</span> +4%</span>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Avg Accuracy</span>
+<span class="material-symbols-outlined text-outline text-[18px]">track_changes</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-code-sm text-code-sm text-3xl font-bold text-on-surface">81%</span>
+<span class="font-label-xs text-label-xs text-secondary flex items-center"><span class="material-symbols-outlined text-[12px]">trending_up</span> +2%</span>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Tests Completed</span>
+<span class="material-symbols-outlined text-outline text-[18px]">task</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-code-sm text-code-sm text-3xl font-bold text-on-surface">12</span>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Questions Attempted</span>
+<span class="material-symbols-outlined text-outline text-[18px]">format_list_numbered</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-code-sm text-code-sm text-3xl font-bold text-on-surface">486</span>
+</div>
+</div>
+<!-- Card 5 -->
+<div class="bg-surface border border-outline-variant p-4 rounded-lg flex flex-col justify-between">
+<div class="flex justify-between items-start mb-2">
+<span class="font-label-xs text-label-xs text-on-surface-variant uppercase">Questions Correct</span>
+<span class="material-symbols-outlined text-outline text-[18px]">check_circle</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="font-code-sm text-code-sm text-3xl font-bold text-on-surface">394</span>
+</div>
+</div>
+</section>
+<!-- Bento Grid Row 1 -->
+<section class="grid grid-cols-12 gap-gutter">
+<!-- Placement Readiness (Span 4) -->
+<div class="col-span-4 bg-surface border border-outline-variant rounded-xl p-6 flex flex-col">
+<h3 class="font-title-md text-title-md text-on-surface mb-6 flex items-center justify-between">
+                        Placement Readiness
+                        <span class="material-symbols-outlined text-on-surface-variant text-[18px] cursor-help" title="Based on aggregate performance across key modules">info</span>
+</h3>
+<div class="flex justify-center mb-8 relative">
+<!-- Custom SVG Radial Chart -->
+<svg class="w-40 h-40" viewBox="0 0 100 100">
+<circle class="text-surface-container-highest stroke-current" cx="50" cy="50" fill="transparent" r="40" stroke-width="8"></circle>
+<circle class="text-primary stroke-current progress-ring__circle" cx="50" cy="50" fill="transparent" r="40" stroke-dasharray="251.2" stroke-dashoffset="67.82" stroke-linecap="round" stroke-width="8"></circle> <!-- 73% of 251.2 -->
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="font-headline-xl text-headline-xl text-on-surface leading-none">73</span>
+<span class="font-label-xs text-label-xs text-primary mt-1 px-2 py-0.5 bg-primary-container/10 rounded uppercase">Competitive</span>
+</div>
+</div>
+<div class="flex flex-col gap-4 mt-auto">
+<!-- Breakdown Bars -->
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-xs text-label-xs text-on-surface-variant">
+<span class="">Aptitude</span><span class="">82%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-primary w-[82%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-xs text-label-xs text-on-surface-variant">
+<span class="">DSA</span><span class="">65%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-primary w-[65%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-xs text-label-xs text-on-surface-variant">
+<span class="">Core CS</span><span class="">70%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-primary w-[70%]"></div>
+</div>
+</div>
+<div class="flex flex-col gap-1">
+<div class="flex justify-between font-label-xs text-label-xs text-on-surface-variant">
+<span class="">SQL</span><span class="">88%</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded overflow-hidden">
+<div class="h-full bg-primary w-[88%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Performance Over Time Chart (Span 8) -->
+<div class="col-span-8 bg-surface border border-outline-variant rounded-xl p-6 flex flex-col">
+<div class="flex justify-between items-center mb-6">
+<h3 class="font-title-md text-title-md text-on-surface">Performance Over Time</h3>
+<div class="flex gap-2">
+<button class="font-label-xs text-label-xs px-2 py-1 rounded bg-surface-container-high text-on-surface">Score</button>
+<button class="font-label-xs text-label-xs px-2 py-1 rounded hover:bg-surface-container-high text-on-surface-variant transition-colors">Accuracy</button>
+</div>
+</div>
+<!-- Chart Placeholder Area (Using CSS Grid/Lines for aesthetic) -->
+<div class="flex-1 relative border-l border-b border-surface-container-highest mt-4 ml-6 pb-6 pt-2">
+<!-- Y-Axis Labels -->
+<div class="absolute -left-8 top-0 h-full flex flex-col justify-between font-label-xs text-label-xs text-on-surface-variant py-2">
+<span class="">100</span><span class="">75</span><span class="">50</span><span class="">25</span><span class="">0</span>
+</div>
+<!-- Grid Lines -->
+<div class="absolute inset-0 flex flex-col justify-between pointer-events-none pb-6 pt-2">
+<div class="w-full h-px bg-surface-container-highest"></div>
+<div class="w-full h-px bg-surface-container-highest"></div>
+<div class="w-full h-px bg-surface-container-highest"></div>
+<div class="w-full h-px bg-surface-container-highest"></div>
+<div class="w-full h-px transparent"></div>
+</div>
+<!-- Data Line (SVG Approximation) -->
+<svg class="w-full h-full absolute inset-0 overflow-visible z-10" preserveAspectRatio="none" viewBox="0 0 100 100">
+<!-- Gradient Fill under line -->
+<defs>
+<linearGradient id="line-gradient" x1="0" x2="0" y1="0" y2="1">
+<stop offset="0%" stop-color="#4d8eff" stop-opacity="0.2"></stop>
+<stop offset="100%" stop-color="#4d8eff" stop-opacity="0"></stop>
+</linearGradient>
+</defs>
+<path d="M0,80 L15,75 L30,65 L45,68 L60,45 L75,40 L90,55 L100,24 L100,100 L0,100 Z" fill="url(#line-gradient)"></path>
+<!-- The Line -->
+<path d="M0,80 L15,75 L30,65 L45,68 L60,45 L75,40 L90,55 L100,24" fill="none" stroke="#adc6ff" stroke-width="2" vector-effect="non-scaling-stroke"></path>
+<!-- Data Points -->
+<circle cx="0" cy="80" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="15" cy="75" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="30" cy="65" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="45" cy="68" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="60" cy="45" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="75" cy="40" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="90" cy="55" fill="#131313" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+<circle cx="100" cy="24" fill="#primary" r="3" stroke="#adc6ff" stroke-width="2"></circle>
+</svg>
+<!-- X-Axis Labels -->
+<div class="absolute -bottom-6 left-0 w-full flex justify-between font-label-xs text-label-xs text-on-surface-variant px-2">
+<span class="">Oct 1</span><span class="">Oct 8</span><span class="">Oct 15</span><span class="">Oct 22</span><span class="">Oct 29</span>
+</div>
+</div>
+</div>
+</section>
+</div>
+</main>
+
+
+</body></html>

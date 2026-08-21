@@ -1,0 +1,232 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+@import "tailwindcss";
+
+/* ============================================
+   PLACEMENT OS — Technical Precision Design System
+   Tailwind v4 CSS-based configuration
+   ============================================ */
+
+@theme {
+  /* === Colors: "Void and Neon" palette === */
+  --color-base: #0A0A0A;
+  --color-surface: #121212;
+  --color-surface-high: #1A1A1A;
+  --color-surface-higher: #1c1b1b;
+  --color-surface-highest: #2a2a2a;
+  --color-surface-dim: #131313;
+
+  --color-border: #262626;
+  --color-border-variant: #424754;
+  --color-outline: #8c909f;
+
+  --color-primary: #4d8eff;
+  --color-primary-text: #adc6ff;
+  --color-primary-dim: #d8e2ff;
+  --color-primary-dark: #002e6a;
+  --color-primary-darker: #004395;
+
+  --color-secondary: #4edea3;
+  --color-secondary-dark: #003824;
+  --color-secondary-container: #00a572;
+
+  --color-tertiary: #ffb786;
+  --color-tertiary-container: #df7412;
+  --color-tertiary-dark: #502400;
+
+  --color-error: #ffb4ab;
+  --color-error-container: #93000a;
+  --color-error-dark: #690005;
+
+  --color-text-primary: #e5e2e1;
+  --color-text-secondary: #c2c6d6;
+  --color-text-muted: #A1A1A1;
+  --color-text-inverse: #313030;
+
+  /* === Typography === */
+  --font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  /* === Spacing (4px base unit) === */
+  --spacing-unit: 4px;
+
+  /* === Border Radius === */
+  --radius-sm: 0.125rem;
+  --radius-DEFAULT: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-full: 9999px;
+}
+
+/* === Base Styles === */
+html {
+  color-scheme: dark;
+}
+
+body {
+  background-color: var(--color-base);
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* === Custom Scrollbar === */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-variant);
+}
+
+/* === Tech Grid Background Pattern === */
+.tech-grid {
+  background-size: 24px 24px;
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+}
+
+/* === Typography Utility Classes === */
+.text-headline-xl {
+  font-family: var(--font-sans);
+  font-size: 40px;
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+}
+
+.text-headline-lg {
+  font-family: var(--font-sans);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+.text-headline-lg-mobile {
+  font-family: var(--font-sans);
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.text-title-md {
+  font-family: var(--font-sans);
+  font-size: 20px;
+  font-weight: 500;
+  line-height: 1.5;
+}
+
+.text-body-md {
+  font-family: var(--font-sans);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-body-sm {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.text-code-sm {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.6;
+}
+
+.text-label-xs {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.05em;
+}
+
+/* === SVG Circle Progress Animation === */
+.circle-progress {
+  transition: stroke-dashoffset 1s ease-out;
+}
+
+.progress-ring__circle {
+  transition: stroke-dashoffset 0.35s;
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* === Focus Styles === */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* === Selection === */
+::selection {
+  background-color: rgba(77, 142, 255, 0.3);
+  color: var(--color-text-primary);
+}
+
+/* === Skeleton Animation === */
+@keyframes skeleton-pulse {
+  0%, 100% { opacity: 0.1; }
+  50% { opacity: 0.2; }
+}
+
+.skeleton {
+  animation: skeleton-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  background-color: var(--color-border);
+  border-radius: var(--radius-DEFAULT);
+}
+
+/* === Fade In Animation === */
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+/* === Material Symbols config === */
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+}
+
+/* === Fluid Container System ===
+   Reusable layout containers for consistent width utilization.
+   At 1920px: clamp(24px, 4vw, 80px) = 76.8px padding → ~1606px content
+   At 2560px: padding caps at 80px, max-width caps at 1760px
+   At 1366px: padding = 54.6px → content fills naturally
+*/
+.container-fluid {
+  width: 100%;
+  max-width: 1760px;
+  margin-inline: auto;
+  padding-inline: clamp(24px, 4vw, 80px);
+}
+
+/* Narrower variant for form-heavy / admin pages */
+.container-narrow {
+  width: 100%;
+  max-width: 1200px;
+  margin-inline: auto;
+  padding-inline: clamp(24px, 4vw, 80px);
+}

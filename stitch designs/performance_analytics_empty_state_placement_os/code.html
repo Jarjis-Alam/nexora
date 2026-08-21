@@ -1,0 +1,318 @@
+<!DOCTYPE html><html class="dark" lang="en"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>LumenPrep - Analytics Empty State</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet">
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "inverse-on-surface": "#313030",
+                      "on-secondary-fixed": "#002113",
+                      "surface-container-high": "#2a2a2a",
+                      "on-surface-variant": "#c2c6d6",
+                      "on-tertiary": "#502400",
+                      "on-primary-fixed-variant": "#004395",
+                      "on-tertiary-container": "#461f00",
+                      "on-background": "#e5e2e1",
+                      "primary-fixed": "#d8e2ff",
+                      "surface-container-highest": "#353534",
+                      "background": "#131313",
+                      "on-tertiary-fixed": "#311400",
+                      "tertiary-fixed-dim": "#ffb786",
+                      "on-error": "#690005",
+                      "surface-tint": "#adc6ff",
+                      "outline-variant": "#424754",
+                      "primary": "#adc6ff",
+                      "error": "#ffb4ab",
+                      "surface": "#131313",
+                      "surface-dim": "#131313",
+                      "tertiary": "#ffb786",
+                      "primary-container": "#4d8eff",
+                      "on-surface": "#e5e2e1",
+                      "error-container": "#93000a",
+                      "inverse-primary": "#005ac2",
+                      "surface-bright": "#3a3939",
+                      "on-primary": "#002e6a",
+                      "on-error-container": "#ffdad6",
+                      "inverse-surface": "#e5e2e1",
+                      "secondary-fixed-dim": "#4edea3",
+                      "on-secondary": "#003824",
+                      "on-primary-fixed": "#001a42",
+                      "outline": "#8c909f",
+                      "surface-container": "#201f1f",
+                      "surface-container-low": "#1c1b1b",
+                      "on-secondary-container": "#00311f",
+                      "on-primary-container": "#00285d",
+                      "tertiary-container": "#df7412",
+                      "primary-fixed-dim": "#adc6ff",
+                      "surface-container-lowest": "#0e0e0e",
+                      "on-tertiary-fixed-variant": "#723600",
+                      "tertiary-fixed": "#ffdcc6",
+                      "on-secondary-fixed-variant": "#005236",
+                      "secondary-container": "#00a572",
+                      "secondary": "#4edea3",
+                      "surface-variant": "#353534",
+                      "secondary-fixed": "#6ffbbe"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "unit": "4px",
+                      "margin-desktop": "64px",
+                      "container-max": "1200px",
+                      "margin-mobile": "16px",
+                      "gutter": "24px"
+              },
+              "fontFamily": {
+                      "label-xs": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-xl": [
+                              "Geist"
+                      ],
+                      "headline-lg-mobile": [
+                              "Geist"
+                      ],
+                      "code-sm": [
+                              "JetBrains Mono"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ],
+                      "body-sm": [
+                              "Geist"
+                      ],
+                      "title-md": [
+                              "Geist"
+                      ],
+                      "body-md": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "label-xs": [
+                              "11px",
+                              {
+                                      "lineHeight": "1",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "headline-xl": [
+                              "40px",
+                              {
+                                      "lineHeight": "1.2",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "1.3",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "code-sm": [
+                              "13px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "1.25",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "title-md": [
+                              "20px",
+                              {
+                                      "lineHeight": "1.5",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "1.6",
+                                      "fontWeight": "400"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      </script>
+<style>
+        @import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        
+        body {
+            font-family: 'Geist', sans-serif;
+            background-color: #0A0A0A;
+            color: #e5e2e1;
+        }
+
+        .empty-chart-bg {
+            background-image: radial-gradient(#262626 1px, transparent 1px);
+            background-size: 24px 24px;
+        }
+    </style>
+</head>
+<body class="flex min-h-screen bg-[#0A0A0A] overflow-x-hidden">
+<!-- SideNavBar (Desktop) -->
+<aside class="hidden md:flex flex-col h-screen left-0 w-64 bg-surface dark:bg-surface border-r border-outline-variant py-6 px-4 gap-4 fixed z-40">
+<div class="flex items-center gap-3 px-2 mb-6">
+<div class="w-10 h-10 rounded bg-primary-container flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-on-primary-container" data-weight="fill">developer_board</span>
+</div>
+<div>
+<h1 class="font-headline-lg text-headline-lg text-on-surface text-[18px]">Placement OS</h1>
+
+</div>
+</div>
+<button class="w-full bg-primary hover:bg-primary-container text-on-primary font-body-sm text-body-sm py-2 rounded transition-colors mb-6 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-[18px]">play_arrow</span>
+            Start Practice
+        </button>
+<nav class="flex-1 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">dashboard</span>
+<span class="font-label-xs text-label-xs">Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">assignment</span>
+<span class="font-label-xs text-label-xs">Tests</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl bg-primary-container text-on-primary-container font-bold hover:bg-primary-container transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]" data-weight="fill">insights</span>
+<span class="font-label-xs text-label-xs">Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">person</span>
+<span class="font-label-xs text-label-xs">Profile</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">quiz</span>
+<span class="font-label-xs text-label-xs">Assessment</span>
+</a>
+</nav>
+<div class="mt-auto border-t border-outline-variant pt-4 flex flex-col gap-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">menu_book</span>
+<span class="font-label-xs text-label-xs">Docs</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px]">help_outline</span>
+<span class="font-label-xs text-label-xs">Help</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 ml-0 md:ml-64 flex flex-col min-h-screen">
+<!-- TopNavBar (Mobile Only) -->
+<header class="md:hidden flex justify-between items-center w-full px-margin-mobile h-16 bg-background dark:bg-background border-b border-outline-variant sticky top-0 z-30">
+<div class="font-headline-lg-mobile text-headline-lg-mobile font-bold text-primary dark:text-primary">Placement OS</div>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</header>
+<!-- Analytics Header -->
+<div class="px-margin-mobile md:px-margin-desktop pt-12 pb-8 border-b border-[#262626] bg-[#121212]">
+<div class="max-w-container-max mx-auto flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
+<div>
+<h1 class="font-headline-xl text-headline-xl text-on-surface mb-2">Performance Analytics</h1>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-2xl">Track your diagnostic progress, identify knowledge gaps, and optimize your preparation strategy.</p>
+</div>
+<div class="flex gap-3">
+<button class="px-4 py-2 rounded border border-[#262626] text-on-surface-variant font-label-xs text-label-xs opacity-50 cursor-not-allowed flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">download</span>
+                        Export
+                    </button>
+<button class="px-4 py-2 rounded bg-primary text-on-primary font-label-xs text-label-xs hover:bg-primary-container transition-colors shadow-[0_0_15px_rgba(173,198,255,0.15)] flex items-center gap-2">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span>
+                        Start Assessment
+                    </button>
+</div>
+</div>
+</div>
+<!-- Dashboard Content Container (Empty State) -->
+<div class="flex-1 px-margin-mobile md:px-margin-desktop py-12">
+<div class="max-w-container-max mx-auto relative h-full min-h-[600px] flex flex-col">
+<!-- Background Ghost Skeleton Grid -->
+<div class="absolute inset-0 grid grid-cols-1 md:grid-cols-12 gap-gutter opacity-20 pointer-events-none z-0">
+<!-- Top Row: Metric Cards -->
+<div class="col-span-1 md:col-span-3 h-24 border border-[#424754] rounded-lg bg-[#121212]"></div>
+<div class="col-span-1 md:col-span-3 h-24 border border-[#424754] rounded-lg bg-[#121212]"></div>
+<div class="col-span-1 md:col-span-3 h-24 border border-[#424754] rounded-lg bg-[#121212]"></div>
+<div class="col-span-1 md:col-span-3 h-24 border border-[#424754] rounded-lg bg-[#121212]"></div>
+<!-- Middle Row: Main Chart & Radar -->
+<div class="col-span-1 md:col-span-8 h-80 border border-[#424754] rounded-lg bg-[#121212] empty-chart-bg relative">
+<div class="absolute bottom-4 left-4 right-4 h-[1px] bg-[#424754]"></div>
+<div class="absolute top-4 bottom-4 left-12 w-[1px] bg-[#424754]"></div>
+<!-- Fake Line Chart Path -->
+<svg class="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100">
+<path d="M12,80 L30,60 L50,70 L70,30 L90,40" fill="none" stroke="#424754" stroke-dasharray="2,2" stroke-width="0.5"></path>
+</svg>
+</div>
+<div class="col-span-1 md:col-span-4 h-80 border border-[#424754] rounded-lg bg-[#121212] flex items-center justify-center">
+<div class="w-48 h-48 rounded-full border border-[#424754] flex items-center justify-center">
+<div class="w-32 h-32 rounded-full border border-[#424754]"></div>
+</div>
+</div>
+<!-- Bottom Row: Data Table -->
+<div class="col-span-1 md:col-span-12 h-64 border border-[#424754] rounded-lg bg-[#121212] flex flex-col">
+<div class="h-12 border-b border-[#424754]"></div>
+<div class="flex-1 flex flex-col gap-4 p-4">
+<div class="h-4 bg-[#424754] rounded w-full"></div>
+<div class="h-4 bg-[#424754] rounded w-3/4"></div>
+<div class="h-4 bg-[#424754] rounded w-5/6"></div>
+</div>
+</div>
+</div>
+<!-- Empty State Overlay Overlay -->
+<div class="absolute inset-0 flex items-center justify-center z-10 bg-gradient-to-t from-[#0A0A0A] via-[rgba(10,10,10,0.8)] to-[rgba(10,10,10,0.4)] backdrop-blur-sm">
+<div class="max-w-md w-full text-center flex flex-col items-center bg-[#121212] border border-[#262626] p-12 rounded-xl shadow-2xl relative overflow-hidden">
+<!-- Decorative Top Border -->
+<div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-primary to-transparent opacity-50"></div>
+<div class="w-16 h-16 rounded-full bg-[#1A1A1A] border border-[#262626] flex items-center justify-center mb-6">
+<span class="material-symbols-outlined text-[32px] text-primary" style="font-variation-settings: 'FILL' 0, 'wght' 200;">monitoring</span>
+</div>
+<h2 class="font-title-md text-title-md text-on-surface mb-3">Your placement insights start here.</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mb-8 leading-relaxed">Complete your initial profile and take your first skill assessment to unlock your placement trajectory. We'll map your career readiness and industry fit automatically.</p>
+<button class="px-6 py-3 rounded bg-primary text-on-primary font-label-xs text-label-xs hover:bg-primary-container transition-all hover:scale-[1.02] active:scale-[0.98] shadow-[0_0_20px_rgba(173,198,255,0.2)] flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px]">rocket_launch</span>
+                            Start Assessment
+                        </button>
+</div>
+</div>
+</div>
+</div>
+</main>
+
+
+</body></html>

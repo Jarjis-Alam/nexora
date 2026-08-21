@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Assessment Results - Placement OS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "outline": "#8c909f",
+                        "primary": "#adc6ff",
+                        "tertiary-container": "#df7412",
+                        "on-primary-fixed": "#001a42",
+                        "on-primary-container": "#00285d",
+                        "surface": "#131313",
+                        "error-container": "#93000a",
+                        "on-surface-variant": "#c2c6d6",
+                        "secondary-fixed": "#6ffbbe",
+                        "outline-variant": "#424754",
+                        "primary-fixed-dim": "#adc6ff",
+                        "surface-dim": "#131313",
+                        "surface-container-highest": "#353534",
+                        "error": "#ffb4ab",
+                        "surface-tint": "#adc6ff",
+                        "surface-container-low": "#1c1b1b",
+                        "surface-container-lowest": "#0e0e0e",
+                        "on-tertiary-container": "#461f00",
+                        "primary-fixed": "#d8e2ff",
+                        "background": "#131313",
+                        "inverse-primary": "#005ac2",
+                        "secondary-container": "#00a572",
+                        "on-primary": "#002e6a",
+                        "on-secondary": "#003824",
+                        "on-tertiary-fixed": "#311400",
+                        "on-error": "#690005",
+                        "surface-variant": "#353534",
+                        "surface-container-high": "#2a2a2a",
+                        "on-secondary-fixed": "#002113",
+                        "on-tertiary-fixed-variant": "#723600",
+                        "primary-container": "#4d8eff",
+                        "on-secondary-fixed-variant": "#005236",
+                        "on-surface": "#e5e2e1",
+                        "on-background": "#e5e2e1",
+                        "inverse-surface": "#e5e2e1",
+                        "on-primary-fixed-variant": "#004395",
+                        "secondary": "#4edea3",
+                        "tertiary-fixed": "#ffdcc6",
+                        "surface-bright": "#3a3939",
+                        "surface-container": "#201f1f",
+                        "on-secondary-container": "#00311f",
+                        "tertiary-fixed-dim": "#ffb786",
+                        "on-tertiary": "#502400",
+                        "tertiary": "#ffb786",
+                        "secondary-fixed-dim": "#4edea3",
+                        "on-error-container": "#ffdad6",
+                        "inverse-on-surface": "#313030"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    "spacing": {
+                        "unit": "4px",
+                        "container-max": "1200px",
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "margin-desktop": "64px"
+                    },
+                    "fontFamily": {
+                        "code-sm": ["JetBrains Mono"],
+                        "body-sm": ["Geist"],
+                        "headline-lg": ["Geist"],
+                        "headline-xl": ["Geist"],
+                        "headline-lg-mobile": ["Geist"],
+                        "title-md": ["Geist"],
+                        "label-xs": ["JetBrains Mono"],
+                        "body-md": ["Geist"]
+                    },
+                    "fontSize": {
+                        "code-sm": ["13px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "body-sm": ["14px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.25", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-xl": ["40px", {"lineHeight": "1.2", "letterSpacing": "-0.02em", "fontWeight": "600"}],
+                        "headline-lg-mobile": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "title-md": ["20px", {"lineHeight": "1.5", "fontWeight": "500"}],
+                        "label-xs": ["11px", {"lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "500"}],
+                        "body-md": ["16px", {"lineHeight": "1.6", "fontWeight": "400"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        body { background-color: #0A0A0A; color: #e5e2e1; }
+        .card-border { border: 1px solid #262626; }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .icon-fill { font-variation-settings: 'FILL' 1; }
+    </style>
+</head>
+<body class="font-body-md text-body-md antialiased min-h-screen flex flex-col md:flex-row">
+<!-- SideNavBar (Desktop) -->
+<nav class="hidden md:flex flex-col fixed left-0 top-0 h-screen z-50 py-margin-desktop px-unit bg-surface border-r border-outline-variant docked left-0 h-full w-64">
+<div class="px-4 mb-8">
+<h1 class="font-headline-xl text-headline-xl font-black text-on-surface">Placement OS</h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">Expert-Modular Prep</p>
+</div>
+<div class="flex-1 flex flex-col gap-2 px-2">
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span>Dashboard</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">quiz</span>
+<span>Tests</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">analytics</span>
+<span>Analytics</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container-high transition-colors" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</a>
+<a class="flex items-center gap-3 px-4 py-3 rounded-DEFAULT text-primary font-bold border-r-2 border-primary bg-surface-container-high opacity-80 transition-opacity" href="#">
+<span class="material-symbols-outlined">assignment</span>
+<span>Assessment</span>
+</a>
+</div>
+<div class="px-4 mt-auto">
+<button class="w-full bg-primary text-on-primary font-title-md text-title-md py-3 rounded-DEFAULT hover:opacity-90 transition-opacity">Start Assessment</button>
+</div>
+</nav>
+<!-- TopAppBar (Mobile) -->
+<header class="md:hidden flex justify-between items-center h-16 px-margin-mobile w-full sticky top-0 z-40 bg-surface border-b border-outline-variant docked full-width top-0">
+<h1 class="font-headline-lg-mobile text-headline-lg-mobile font-black text-on-surface">Placement OS</h1>
+<div class="flex gap-4">
+<button class="text-on-surface-variant hover:text-primary transition-all"><span class="material-symbols-outlined">notifications</span></button>
+<button class="text-on-surface-variant hover:text-primary transition-all"><span class="material-symbols-outlined">settings</span></button>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-1 md:ml-64 p-margin-mobile md:p-margin-desktop max-w-[1200px] mx-auto w-full">
+<!-- Header Section -->
+<header class="mb-16 flex flex-col md:flex-row justify-between items-start md:items-end gap-6 border-b border-[#262626] pb-8">
+<div>
+<div class="flex items-center gap-3 mb-2">
+<span class="bg-secondary/10 text-secondary font-label-xs text-label-xs px-2 py-1 rounded-DEFAULT border border-secondary/20">COMPLETED</span>
+<span class="font-code-sm text-code-sm text-outline">ID: ASM-8842-X</span>
+</div>
+<h2 class="font-headline-lg md:font-headline-xl text-headline-lg md:text-headline-xl text-on-surface">Assessment Results</h2>
+<p class="text-on-surface-variant mt-2 font-body-md text-body-md">Comprehensive Software Engineering Core</p>
+</div>
+<div class="flex items-center gap-6">
+<div class="text-right">
+<div class="font-headline-xl text-headline-xl text-primary font-bold">72<span class="text-outline text-headline-lg">/100</span></div>
+<div class="font-code-sm text-code-sm text-on-surface-variant">Overall Score</div>
+</div>
+<div class="h-12 w-px bg-[#262626]"></div>
+<div class="text-right">
+<div class="font-headline-xl text-headline-xl text-secondary font-bold">72%</div>
+<div class="font-code-sm text-code-sm text-on-surface-variant">Accuracy</div>
+</div>
+</div>
+</header>
+<!-- Summary Stats Bento Grid -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-gutter mb-16">
+<div class="bg-[#121212] card-border rounded-lg p-6 flex flex-col justify-between h-32">
+<div class="font-label-xs text-label-xs text-outline tracking-wider">CORRECT</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-secondary">72</span>
+<span class="font-code-sm text-code-sm text-outline">/ 100</span>
+</div>
+</div>
+<div class="bg-[#121212] card-border rounded-lg p-6 flex flex-col justify-between h-32">
+<div class="font-label-xs text-label-xs text-outline tracking-wider">INCORRECT</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-error">24</span>
+<span class="font-code-sm text-code-sm text-outline">/ 100</span>
+</div>
+</div>
+<div class="bg-[#121212] card-border rounded-lg p-6 flex flex-col justify-between h-32">
+<div class="font-label-xs text-label-xs text-outline tracking-wider">UNANSWERED</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-tertiary-container">4</span>
+<span class="font-code-sm text-code-sm text-outline">/ 100</span>
+</div>
+</div>
+<div class="bg-[#121212] card-border rounded-lg p-6 flex flex-col justify-between h-32">
+<div class="font-label-xs text-label-xs text-outline tracking-wider">TIME TAKEN</div>
+<div class="flex items-baseline gap-2">
+<span class="font-headline-lg text-headline-lg text-on-surface">84</span>
+<span class="font-code-sm text-code-sm text-outline">m 12s</span>
+</div>
+</div>
+</section>
+<!-- Subject Performance -->
+<section class="mb-16">
+<h3 class="font-title-md text-title-md text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">bar_chart</span> Subject Breakdown
+            </h3>
+<div class="bg-[#121212] card-border rounded-lg overflow-hidden">
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Data Structures &amp; Algorithms</span>
+<span class="font-code-sm text-code-sm text-primary">85%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 85%"></div>
+</div>
+</div>
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Operating Systems</span>
+<span class="font-code-sm text-code-sm text-primary">70%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 70%"></div>
+</div>
+</div>
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Database Management</span>
+<span class="font-code-sm text-code-sm text-primary">90%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 90%"></div>
+</div>
+</div>
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Computer Networks</span>
+<span class="font-code-sm text-code-sm text-primary">60%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 60%"></div>
+</div>
+</div>
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Object Oriented Prog.</span>
+<span class="font-code-sm text-code-sm text-primary">75%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 75%"></div>
+</div>
+</div>
+<!-- Subject Item -->
+<div class="flex flex-col gap-2">
+<div class="flex justify-between items-end">
+<span class="font-code-sm text-code-sm text-on-surface">Quantitative Aptitude</span>
+<span class="font-code-sm text-code-sm text-error">45%</span>
+</div>
+<div class="w-full bg-[#1A1A1A] h-1 rounded-full overflow-hidden">
+<div class="bg-error h-full rounded-full" style="width: 45%"></div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Question Review Data Table -->
+<section class="mb-16">
+<h3 class="font-title-md text-title-md text-on-surface mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined">rule</span> Detailed Review
+            </h3>
+<div class="bg-[#121212] card-border rounded-lg overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="border-b border-[#262626] bg-[#1A1A1A]">
+<th class="p-4 font-label-xs text-label-xs text-outline w-16 text-center">Q#</th>
+<th class="p-4 font-label-xs text-label-xs text-outline">Subject</th>
+<th class="p-4 font-label-xs text-label-xs text-outline">Status</th>
+<th class="p-4 font-label-xs text-label-xs text-outline text-right">Action</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-[#262626] hover:bg-[#1A1A1A] transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-outline text-center">01</td>
+<td class="p-4 font-code-sm text-code-sm text-on-surface">Data Structures &amp; Algorithms</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 text-secondary font-label-xs text-label-xs bg-secondary/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px]">check_circle</span> Correct
+                                    </span>
+</td>
+<td class="p-4 text-right">
+<button class="text-primary hover:text-primary-fixed transition-colors font-code-sm text-code-sm">View Details</button>
+</td>
+</tr>
+<tr class="border-b border-[#262626] hover:bg-[#1A1A1A] transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-outline text-center">02</td>
+<td class="p-4 font-code-sm text-code-sm text-on-surface">Operating Systems</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 text-error font-label-xs text-label-xs bg-error/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px]">cancel</span> Incorrect
+                                    </span>
+</td>
+<td class="p-4 text-right">
+<button class="text-primary hover:text-primary-fixed transition-colors font-code-sm text-code-sm">View Details</button>
+</td>
+</tr>
+<tr class="border-b border-[#262626] hover:bg-[#1A1A1A] transition-colors">
+<td class="p-4 font-code-sm text-code-sm text-outline text-center">03</td>
+<td class="p-4 font-code-sm text-code-sm text-on-surface">Database Management</td>
+<td class="p-4">
+<span class="inline-flex items-center gap-1 text-tertiary-container font-label-xs text-label-xs bg-tertiary-container/10 px-2 py-1 rounded-DEFAULT">
+<span class="material-symbols-outlined text-[14px]">help</span> Unanswered
+                                    </span>
+</td>
+<td class="p-4 text-right">
+<button class="text-primary hover:text-primary-fixed transition-colors font-code-sm text-code-sm">View Details</button>
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</section>
+<!-- Action Footer -->
+<footer class="flex justify-end pt-8 border-t border-[#262626]">
+<button class="bg-primary text-[#0A0A0A] font-title-md text-title-md py-3 px-8 rounded-DEFAULT hover:bg-primary-fixed transition-colors font-medium">Return to Dashboard</button>
+</footer>
+</main>
+<!-- BottomNavBar (Mobile Only) -->
+<nav class="md:hidden fixed bottom-0 w-full bg-surface border-t border-outline-variant z-50 flex justify-around items-center h-16 pb-safe">
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">dashboard</span>
+<span class="font-label-xs text-label-xs">Dashboard</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">quiz</span>
+<span class="font-label-xs text-label-xs">Tests</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-primary border-t-2 border-primary mt-[-2px] bg-surface-container-high" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px] icon-fill">assignment</span>
+<span class="font-label-xs text-label-xs font-bold">Assessment</span>
+</a>
+<a class="flex flex-col items-center justify-center w-full h-full text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined mb-1 text-[20px]">person</span>
+<span class="font-label-xs text-label-xs">Profile</span>
+</a>
+</nav>
+</body></html>
