@@ -68,8 +68,8 @@ export function DeveloperFooter() {
       ),
     },
     {
-      href: "https://github.com/Jarjis-Alam/placement-os",
-      title: "Placement OS Engine",
+      href: "https://github.com/Jarjis-Alam/nexora",
+      title: "Nexora Engine",
       node: (
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface/90 border border-border text-text-secondary hover:text-text-primary transition-all duration-300 shadow-sm cursor-pointer">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
