@@ -9,6 +9,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const registered = searchParams.get("registered");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -21,19 +22,23 @@ function LoginForm() {
 
     try {
       const result = await signIn("credentials", {
-        email,
+        email: email.toLowerCase().trim(),
         password,
         redirect: false,
       });
 
       if (result?.error) {
-        setError("Invalid email or password");
+        if (result.error === "Configuration" || result.status === 500) {
+          setError("Authentication is temporarily unavailable.");
+        } else {
+          setError("Invalid email or password.");
+        }
       } else {
         router.push(callbackUrl);
         router.refresh();
       }
     } catch {
-      setError("An unexpected error occurred");
+      setError("Authentication is temporarily unavailable.");
     } finally {
       setLoading(false);
     }
@@ -47,6 +52,12 @@ function LoginForm() {
       </p>
 
       <form onSubmit={handleSubmit} className="space-y-5">
+        {registered && !error && (
+          <div className="bg-primary/10 border border-primary/20 rounded px-4 py-3 text-body-sm text-primary-text">
+            Account created successfully. Please sign in.
+          </div>
+        )}
+
         {error && (
           <div className="bg-error/10 border border-error/20 rounded px-4 py-3 text-body-sm text-error">
             {error}

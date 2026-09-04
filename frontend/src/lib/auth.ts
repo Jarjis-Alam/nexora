@@ -8,6 +8,51 @@ import { authConfig } from "./auth.config";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
+  callbacks: {
+    ...authConfig.callbacks,
+    async session({ session, token }) {
+      if (session.user && token) {
+        let currentUserId = token.id as string;
+        let isAdmin = (token.isAdmin as boolean) || false;
+
+        if (currentUserId) {
+          // Verify user exists in database to avoid foreign-key violations with stale sessions
+          const userById = await db
+            .select({ id: users.id, isAdmin: users.isAdmin, email: users.email })
+            .from(users)
+            .where(eq(users.id, currentUserId))
+            .limit(1);
+
+          if (userById.length > 0) {
+            currentUserId = userById[0].id;
+            isAdmin = userById[0].isAdmin;
+          } else if (session.user.email) {
+            // Self-healing: verify user exists by email if ID was modified or reseeded
+            const userByEmail = await db
+              .select({ id: users.id, isAdmin: users.isAdmin, email: users.email })
+              .from(users)
+              .where(eq(users.email, session.user.email.toLowerCase().trim()))
+              .limit(1);
+
+            if (userByEmail.length > 0) {
+              currentUserId = userByEmail[0].id;
+              isAdmin = userByEmail[0].isAdmin;
+              token.id = currentUserId;
+            } else {
+              // User no longer exists in database
+              return null as unknown as typeof session;
+            }
+          } else {
+            return null as unknown as typeof session;
+          }
+        }
+
+        session.user.id = currentUserId;
+        (session.user as { isAdmin?: boolean }).isAdmin = isAdmin;
+      }
+      return session;
+    },
+  },
   providers: [
     Credentials({
       name: "credentials",
@@ -18,7 +63,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
-        const email = credentials.email as string;
+        const email = (credentials.email as string).toLowerCase().trim();
         const password = credentials.password as string;
 
         const user = await db

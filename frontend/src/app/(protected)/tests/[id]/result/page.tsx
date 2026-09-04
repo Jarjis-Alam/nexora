@@ -64,6 +64,11 @@ export default async function AssessmentResultPage({
 
   const attempt = attemptRows[0];
 
+  // Security guard: If attempt is still active / in_progress, redirect back to the exam engine
+  if (attempt.status === "in_progress") {
+    redirect(`/tests/${testId}/attempt`);
+  }
+
   // 1. Fetch per-subject skill breakdown for this attempt
   const subjectScores = await db
     .select({

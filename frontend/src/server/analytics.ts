@@ -6,10 +6,9 @@ import {
   tests,
   subjects,
   topics,
-  skillScores,
 } from "@/db/schema";
-import { eq, and, sql, desc, asc } from "drizzle-orm";
-import { calculateReadiness, detectWeakAreas } from "./readiness";
+import { eq, and, asc } from "drizzle-orm";
+import { calculateReadiness } from "./readiness";
 
 export interface AnalyticsData {
   hasData: boolean;
@@ -261,8 +260,6 @@ export async function getAnalyticsData(userId: string): Promise<AnalyticsData> {
 
   // 7. Accuracy vs Speed (average time per question vs accuracy per test attempt)
   const accuracyVsSpeed = submittedAttempts.map((att) => {
-    // Count questions in this attempt
-    const attAnswers = answerRows.filter((a) => a.answerId); // approximation
     const timeTakenSec = att.timeTaken || 60;
     const avgTimePerQuestion = Math.round(timeTakenSec / 20); // normalized estimate
 

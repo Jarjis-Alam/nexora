@@ -144,7 +144,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
           </div>
 
           <div className="h-64 w-full">
-            {data.performanceOverTime.length >= 2 ? (
+            {data.performanceOverTime.length >= 1 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={data.performanceOverTime}
@@ -183,6 +183,8 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                     dataKey="score"
                     stroke="#adc6ff"
                     strokeWidth={2}
+                    dot={{ r: 4, fill: "#4d8eff", stroke: "#adc6ff", strokeWidth: 2 }}
+                    activeDot={{ r: 6, fill: "#4d8eff", stroke: "#ffffff", strokeWidth: 2 }}
                     fillOpacity={1}
                     fill="url(#scoreGradient)"
                     name="Score"
@@ -191,7 +193,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-text-muted text-body-sm font-mono border border-dashed border-border rounded-lg">
-                Complete more tests to generate trend line.
+                Complete assessments to generate performance trend line.
               </div>
             )}
           </div>

@@ -12,10 +12,22 @@ export function StartTestButton({ testId }: { testId: string }) {
     setLoading(true);
     try {
       const result = await startAttemptAction(testId);
+      if (!result?.attemptId) {
+        throw new Error("Failed to initialize exam session.");
+      }
       router.push(`/tests/${testId}/attempt?attemptId=${result.attemptId}`);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error("Failed to start attempt:", err);
-      alert("Failed to initiate test. Please try again.");
+      const msg = err instanceof Error ? err.message : "";
+      if (
+        msg.includes("Unauthorized") ||
+        msg.includes("log in") ||
+        msg.includes("session")
+      ) {
+        router.push(`/auth/login?callbackUrl=/tests/${testId}`);
+        return;
+      }
+      alert(msg || "Failed to initiate test. Please try again.");
       setLoading(false);
     }
   }

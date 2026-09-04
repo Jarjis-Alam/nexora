@@ -28,6 +28,7 @@ export function TestBuilder({
   >([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const filteredRepo = repositoryQuestions.filter(
     (q) =>
@@ -40,14 +41,36 @@ export function TestBuilder({
   const totalMarks = selectedQuestions.reduce((sum, q) => sum + q.marks, 0);
 
   const addQuestion = (q: RepositoryQuestion) => {
-    setSelectedQuestions((prev) => [
-      ...prev,
-      { id: q.id, question: q, marks: q.marks },
-    ]);
+    setSelectedQuestions((prev) => {
+      if (prev.some((item) => item.id === q.id)) return prev;
+      return [...prev, { id: q.id, question: q, marks: q.marks }];
+    });
   };
 
   const removeQuestion = (id: string) => {
     setSelectedQuestions((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  const moveQuestionUp = (idx: number) => {
+    if (idx <= 0) return;
+    setSelectedQuestions((prev) => {
+      const next = [...prev];
+      const temp = next[idx];
+      next[idx] = next[idx - 1];
+      next[idx - 1] = temp;
+      return next;
+    });
+  };
+
+  const moveQuestionDown = (idx: number) => {
+    if (idx >= selectedQuestions.length - 1) return;
+    setSelectedQuestions((prev) => {
+      const next = [...prev];
+      const temp = next[idx];
+      next[idx] = next[idx + 1];
+      next[idx + 1] = temp;
+      return next;
+    });
   };
 
   const updateQuestionMarks = (id: string, newMarks: number) => {
@@ -57,12 +80,13 @@ export function TestBuilder({
   };
 
   const handleCreateTest = async () => {
-    if (!title) {
-      alert("Please enter a test title.");
+    setErrorMsg(null);
+    if (!title.trim()) {
+      setErrorMsg("Please enter a valid test title.");
       return;
     }
     if (selectedQuestions.length === 0) {
-      alert("Please add at least one question to the test.");
+      setErrorMsg("Please add at least one question to the test.");
       return;
     }
 
@@ -72,7 +96,7 @@ export function TestBuilder({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title,
+          title: title.trim(),
           description,
           duration: Number(duration),
           type: testType,
@@ -85,15 +109,16 @@ export function TestBuilder({
         }),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Failed to create test");
+        throw new Error(data.error || "Failed to create test");
       }
 
       router.push("/tests");
       router.refresh();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to create test.");
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create test.");
     } finally {
       setLoading(false);
     }
@@ -191,7 +216,7 @@ export function TestBuilder({
           </div>
 
           <div className="space-y-3 max-h-[460px] overflow-y-auto pr-1">
-            {filteredRepo.map((q, idx) => (
+            {filteredRepo.map((q) => (
               <div
                 key={q.id}
                 className="bg-base border border-border rounded-lg p-4 space-y-2 hover:border-border-variant transition-colors"
@@ -264,6 +289,28 @@ export function TestBuilder({
                     </div>
 
                     <div className="flex items-center gap-3 flex-shrink-0">
+                      {/* Move Up / Down Buttons */}
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          type="button"
+                          onClick={() => moveQuestionUp(idx)}
+                          disabled={idx === 0}
+                          aria-label={`Move question ${idx + 1} up`}
+                          className="text-text-muted hover:text-text-primary disabled:opacity-20 p-1 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">arrow_upward</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => moveQuestionDown(idx)}
+                          disabled={idx === selectedQuestions.length - 1}
+                          aria-label={`Move question ${idx + 1} down`}
+                          className="text-text-muted hover:text-text-primary disabled:opacity-20 p-1 transition-colors"
+                        >
+                          <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+                        </button>
+                      </div>
+
                       <div className="flex items-center gap-1 font-mono text-label-xs">
                         <input
                           type="number"
@@ -278,6 +325,7 @@ export function TestBuilder({
 
                       <button
                         onClick={() => removeQuestion(sq.id)}
+                        aria-label={`Remove question ${idx + 1}`}
                         className="text-text-muted hover:text-error transition-colors p-1"
                       >
                         <span className="material-symbols-outlined text-[18px]">
@@ -295,15 +343,22 @@ export function TestBuilder({
             </div>
           </div>
 
-          <div className="pt-4 border-t border-border flex justify-end gap-3">
-            <button
-              onClick={handleCreateTest}
-              disabled={loading || selectedQuestions.length === 0}
-              className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded hover:bg-primary-text transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
-              {loading ? "Deploying..." : "Create Test Payload"}
-            </button>
+          <div className="pt-4 border-t border-border flex flex-col gap-3">
+            {errorMsg && (
+              <div className="p-3 bg-error/10 border border-error/20 rounded text-error text-label-xs font-mono">
+                {errorMsg}
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={handleCreateTest}
+                disabled={loading || selectedQuestions.length === 0}
+                className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded hover:bg-primary-text transition-colors disabled:opacity-50 flex items-center gap-2 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">rocket_launch</span>
+                {loading ? "Deploying..." : "Create Test Payload"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

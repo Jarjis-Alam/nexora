@@ -1,5 +1,11 @@
 import type { NextAuthConfig } from "next-auth";
 
+if (process.env.NODE_ENV === "production" && !process.env.AUTH_SECRET) {
+  throw new Error(
+    "FATAL CONFIGURATION ERROR: AUTH_SECRET environment variable is required in production."
+  );
+}
+
 export const authConfig = {
   session: {
     strategy: "jwt",
@@ -28,4 +34,5 @@ export const authConfig = {
   },
   providers: [],
   secret: process.env.AUTH_SECRET,
+  trustHost: true,
 } satisfies NextAuthConfig;

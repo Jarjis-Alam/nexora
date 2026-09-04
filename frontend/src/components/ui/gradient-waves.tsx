@@ -197,8 +197,6 @@ export default function GradientWaves({
     let program: any;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     let mesh: any;
-    let ro: ResizeObserver;
-    let io: IntersectionObserver;
 
     try {
       renderer = new Renderer({
@@ -272,7 +270,7 @@ export default function GradientWaves({
       renderer.render({ scene: mesh });
     };
 
-    ro = new ResizeObserver(setSize);
+    const ro = new ResizeObserver(setSize);
     ro.observe(container);
     setSize();
 
@@ -329,10 +327,14 @@ export default function GradientWaves({
       }
     };
 
-    io = new IntersectionObserver(
+    const io = new IntersectionObserver(
       ([entry]) => {
         isVisible = entry.isIntersecting;
-        isVisible ? tryStart() : tryStop();
+        if (isVisible) {
+          tryStart();
+        } else {
+          tryStop();
+        }
       },
       { threshold: 0 }
     );
@@ -340,7 +342,11 @@ export default function GradientWaves({
 
     const onVisibility = () => {
       isPageVisible = !document.hidden;
-      isPageVisible ? tryStart() : tryStop();
+      if (isPageVisible) {
+        tryStart();
+      } else {
+        tryStop();
+      }
     };
     document.addEventListener("visibilitychange", onVisibility);
 

@@ -4,6 +4,7 @@ import { users, profiles } from "@/db/schema";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const registerSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -11,12 +12,27 @@ const registerSchema = z.object({
   password: z.string().min(6, "Password must be at least 6 characters"),
   college: z.string().optional(),
   branch: z.string().optional(),
-  graduationYear: z.number().optional(),
+  graduationYear: z.number().nullable().optional(),
 });
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    const rateLimit = checkRateLimit(`register_${ip}`, { limit: 10, windowMs: 60 * 1000 });
+    if (!rateLimit.success) {
+      return NextResponse.json(
+        { error: "Too many registration attempts. Please try again in 1 minute." },
+        { status: 429, headers: { "Retry-After": "60" } }
+      );
+    }
+
     const body = await request.json();
+    if (body.graduationYear === "" || body.graduationYear === undefined || isNaN(Number(body.graduationYear))) {
+      body.graduationYear = null;
+    } else {
+      body.graduationYear = Number(body.graduationYear);
+    }
+
     const validation = registerSchema.safeParse(body);
 
     if (!validation.success) {
@@ -29,12 +45,13 @@ export async function POST(request: NextRequest) {
 
     const { name, email, password, college, branch, graduationYear } =
       validation.data;
+    const cleanEmail = email.toLowerCase().trim();
 
     // Check if user exists
     const existing = await db
       .select()
       .from(users)
-      .where(eq(users.email, email))
+      .where(eq(users.email, cleanEmail))
       .limit(1);
 
     if (existing.length > 0) {
@@ -48,15 +65,15 @@ export async function POST(request: NextRequest) {
     const passwordHash = await bcrypt.hash(password, 12);
     const newUser = await db
       .insert(users)
-      .values({ email, passwordHash })
+      .values({ email: cleanEmail, passwordHash })
       .returning();
 
     // Create profile
     await db.insert(profiles).values({
       userId: newUser[0].id,
-      name,
-      college: college || null,
-      branch: branch || null,
+      name: name.trim(),
+      college: college?.trim() || null,
+      branch: branch?.trim() || null,
       graduationYear: graduationYear || null,
     });
 
@@ -67,7 +84,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("Registration error:", error);
     return NextResponse.json(
-      { error: "An unexpected error occurred" },
+      { error: "Authentication is temporarily unavailable." },
       { status: 500 }
     );
   }

@@ -17,7 +17,7 @@ export function Sidebar({ baselineTestId }: SidebarProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [devModalOpen, setDevModalOpen] = useState(false);
 
-  const isAdmin = (session?.user as any)?.isAdmin;
+  const isAdmin = (session?.user as { isAdmin?: boolean } | undefined)?.isAdmin;
 
   const navItems = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
@@ -128,7 +128,7 @@ export function Sidebar({ baselineTestId }: SidebarProps) {
             className="w-full py-1.5 px-3 rounded-lg bg-surface-high border border-primary/30 hover:border-primary text-primary-text hover:text-white transition-all text-center text-label-xs font-mono font-semibold flex items-center justify-center gap-2 cursor-pointer shadow-sm"
           >
             <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-            <span>VIEW 3D DEV CARD</span>
+            <span>DEVELOPER PORTFOLIO</span>
           </button>
 
           <div className="flex items-center justify-between gap-1.5 pt-0.5">

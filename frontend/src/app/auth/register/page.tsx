@@ -29,7 +29,8 @@ export default function RegisterPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
-          graduationYear: Number(formData.graduationYear),
+          email: formData.email.toLowerCase().trim(),
+          graduationYear: formData.graduationYear ? Number(formData.graduationYear) : null,
         }),
       });
 
@@ -41,7 +42,7 @@ export default function RegisterPage() {
 
       // Auto sign in
       const signInResult = await signIn("credentials", {
-        email: formData.email,
+        email: formData.email.toLowerCase().trim(),
         password: formData.password,
         redirect: false,
       });

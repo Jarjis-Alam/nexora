@@ -4,12 +4,10 @@ import {
   answers,
   questions,
   tests,
-  subjects,
-  topics,
   skillScores,
   testQuestions,
 } from "@/db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export async function gradeAttempt(attemptId: string, userId: string) {
   // 1. Verify ownership and that attempt is in_progress
@@ -130,7 +128,7 @@ export async function gradeAttempt(attemptId: string, userId: string) {
           ? studentAns.selectedAnswer.map(String).sort()
           : [String(studentAns.selectedAnswer)];
         const correctArr = Array.isArray(q.correctAnswer)
-          ? (q.correctAnswer as any[]).map(String).sort()
+          ? (q.correctAnswer as unknown[]).map(String).sort()
           : [String(q.correctAnswer)];
 
         isCorrect =

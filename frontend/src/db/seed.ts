@@ -8,56 +8,102 @@ import {
   questions,
   tests,
   testQuestions,
+  skillScores,
+  attempts,
+  answers,
 } from "./schema";
 import bcrypt from "bcryptjs";
+import { eq } from "drizzle-orm";
 
 const DATABASE_URL =
   process.env.DATABASE_URL ||
-  "postgresql://postgres@localhost:5432/placement_os";
+  "postgresql://postgres:postgres@localhost:5432/placement_os";
 
 async function seed() {
+  // ==========================================
+  // PRODUCTION SAFETY GUARD
+  // ==========================================
+  if (process.env.NODE_ENV === "production" && process.env.ALLOW_DESTRUCTIVE_SEED !== "true") {
+    console.error("❌ CRITICAL ERROR: seed.ts contains destructive table wipes and is blocked in production.");
+    console.error("To initialize production catalogs safely, use a migration or set ALLOW_DESTRUCTIVE_SEED=true explicitly.");
+    process.exit(1);
+  }
+
   const pool = new pg.Pool({ connectionString: DATABASE_URL });
   const db = drizzle(pool);
 
   console.log("🌱 Seeding Placement OS database...\n");
 
   // ==========================================
-  // 1. SUBJECTS
+  // 0. CLEANUP (Idempotent re-seeding)
+  // ==========================================
+  console.log("🧹 Cleaning previous assessment and catalog records...");
+  await db.delete(testQuestions);
+  await db.delete(answers);
+  await db.delete(skillScores);
+  await db.delete(attempts);
+  await db.delete(questions);
+  await db.delete(topics);
+  await db.delete(tests);
+  await db.delete(subjects);
+  await db.delete(users).where(eq(users.email, "admin@placementos.dev"));
+  await db.delete(users).where(eq(users.email, "alex.chen@placementos.dev"));
+  console.log("  ✓ Cleaned up existing assessment records");
+
+  // ==========================================
+  // 1. SUBJECTS (Stable UUIDs across re-seeds)
   // ==========================================
   console.log("📚 Creating subjects...");
   const subjectData = [
-    { name: "Aptitude", code: "APT", category: "aptitude", displayOrder: 1 },
     {
+      id: "00000000-0000-0000-0000-000000000101",
+      name: "Aptitude",
+      code: "APT",
+      category: "aptitude",
+      displayOrder: 1,
+    },
+    {
+      id: "00000000-0000-0000-0000-000000000102",
       name: "Data Structures & Algorithms",
       code: "DSA",
       category: "cs",
       displayOrder: 2,
     },
     {
+      id: "00000000-0000-0000-0000-000000000103",
       name: "Database Management Systems",
       code: "DBMS",
       category: "cs",
       displayOrder: 3,
     },
     {
+      id: "00000000-0000-0000-0000-000000000104",
       name: "Operating Systems",
       code: "OS",
       category: "cs",
       displayOrder: 4,
     },
     {
+      id: "00000000-0000-0000-0000-000000000105",
       name: "Computer Networks",
       code: "CN",
       category: "cs",
       displayOrder: 5,
     },
     {
+      id: "00000000-0000-0000-0000-000000000106",
       name: "Object Oriented Programming",
       code: "OOP",
       category: "cs",
       displayOrder: 6,
     },
-    { name: "SQL", code: "SQL", category: "cs", displayOrder: 7 },
+    {
+      id: "00000000-0000-0000-0000-000000000107",
+      name: "SQL",
+      code: "SQL",
+      category: "cs",
+      displayOrder: 7,
+    },
   ];
 
   const insertedSubjects = await db
@@ -2024,6 +2070,400 @@ async function seed() {
       explanation: "UNION combines result sets and removes duplicate rows. UNION ALL combines result sets without removing duplicates, making it faster.",
       expectedTime: 30,
     },
+    // ---- ADDITIONAL QUESTIONS TO REACH 160 TOTAL QUESTIONS ----
+    // APTITUDE (5 questions)
+    {
+      question: "A boat travels 24 km upstream in 6 hours and 36 km downstream in 4 hours. What is the speed of the stream?",
+      questionType: "single_choice",
+      options: ["2.5 km/h", "5 km/h", "3 km/h", "1.5 km/h"],
+      correctAnswer: "2.5 km/h",
+      subjectCode: "APT",
+      topicName: "Quantitative Aptitude",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Speed upstream (u) = 24/6 = 4 km/h. Speed downstream (d) = 36/4 = 9 km/h. Speed of stream = (d - u)/2 = (9 - 4)/2 = 2.5 km/h.",
+      expectedTime: 60,
+    },
+    {
+      question: "Statements: All engineers are problem solvers. Some problem solvers are programmers. Conclusions: I. Some engineers are programmers. II. Some programmers are problem solvers. Which conclusion(s) logically follow(s)?",
+      questionType: "single_choice",
+      options: ["Only II follows", "Only I follows", "Both I and II follow", "Neither I nor II follows"],
+      correctAnswer: "Only II follows",
+      subjectCode: "APT",
+      topicName: "Logical Reasoning",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "Conclusion II is a valid conversion of 'Some problem solvers are programmers' ('Some programmers are problem solvers'). Conclusion I cannot be deduced because there is no direct universal linkage between engineers and programmers.",
+      expectedTime: 45,
+    },
+    {
+      question: "Choose the word that best completes the sentence: 'The team's research was praised for its ______ attention to detail and rigorous testing protocols.'",
+      questionType: "single_choice",
+      options: ["meticulous", "equivocal", "perfunctory", "arbitrary"],
+      correctAnswer: "meticulous",
+      subjectCode: "APT",
+      topicName: "Verbal Ability",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "'Meticulous' means showing great attention to detail; very careful and precise, which aligns with praise for scientific rigor.",
+      expectedTime: 30,
+    },
+    {
+      question: "When a positive integer n is divided by 7, the remainder is 5. What is the remainder when 3n + 4 is divided by 7?",
+      questionType: "single_choice",
+      options: ["5", "2", "4", "6"],
+      correctAnswer: "5",
+      subjectCode: "APT",
+      topicName: "Number Systems",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Let n = 7k + 5. Then 3n + 4 = 3(7k + 5) + 4 = 21k + 15 + 4 = 21k + 19 = 7(3k + 2) + 5. The remainder is 5.",
+      expectedTime: 45,
+    },
+    {
+      question: "A can finish a task alone in 10 days, while B can finish it in 15 days. They work together and are paid ₹6,000 for the entire task. What is A's share of the payment?",
+      questionType: "single_choice",
+      options: ["₹3,600", "₹3,000", "₹2,400", "₹4,000"],
+      correctAnswer: "₹3,600",
+      subjectCode: "APT",
+      topicName: "Time & Work",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Ratio of efficiency = (1/10) : (1/15) = 3 : 2. A's share = (3/5) × ₹6,000 = ₹3,600.",
+      expectedTime: 60,
+    },
+    // COMPUTER NETWORKS (4 questions)
+    {
+      question: "Which routing protocol uses Dijkstra's shortest path algorithm and requires each router to possess complete topology information of the network area?",
+      questionType: "single_choice",
+      options: ["OSPF (Open Shortest Path First)", "RIP (Routing Information Protocol)", "BGP (Border Gateway Protocol)", "EGP (Exterior Gateway Protocol)"],
+      correctAnswer: "OSPF (Open Shortest Path First)",
+      subjectCode: "CN",
+      topicName: "Routing",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "OSPF is a link-state routing protocol that floods link-state advertisements (LSAs) and uses Dijkstra's SPF algorithm to calculate the shortest path tree.",
+      expectedTime: 45,
+    },
+    {
+      question: "Why does the client in a TCP connection transition into the TIME_WAIT state after sending the final ACK during connection termination?",
+      questionType: "single_choice",
+      options: [
+        "To ensure the final ACK was received by the server and handle delayed duplicate segments",
+        "To wait for outstanding DNS queries to resolve",
+        "To renegotiate maximum segment size (MSS) for the next handshake",
+        "To release the ephemeral port back to the OS immediately",
+      ],
+      correctAnswer: "To ensure the final ACK was received by the server and handle delayed duplicate segments",
+      subjectCode: "CN",
+      topicName: "Transport Layer",
+      difficulty: "hard",
+      marks: 2,
+      explanation: "TIME_WAIT lasts for 2 MSL (Maximum Segment Lifetime) to ensure that if the final ACK is lost, the server's retransmitted FIN can be acknowledged, and old packets in the network die out before the port is reused.",
+      expectedTime: 60,
+    },
+    {
+      question: "In modern TLS handshakes, how is forward secrecy achieved when establishing the shared session encryption key?",
+      questionType: "single_choice",
+      options: [
+        "Ephemeral Diffie-Hellman (ECDHE) key exchange",
+        "Static RSA public key direct encryption",
+        "MD5 shared secret derivation",
+        "DES pre-shared keys",
+      ],
+      correctAnswer: "Ephemeral Diffie-Hellman (ECDHE) key exchange",
+      subjectCode: "CN",
+      topicName: "Network Security",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Ephemeral Diffie-Hellman generates temporary key pairs for every single session so that compromise of long-term server certificates does not compromise past encrypted traffic.",
+      expectedTime: 45,
+    },
+    {
+      question: "What is the network address and broadcast address for an IP address 192.168.10.74 with a subnet mask of 255.255.255.224 (/27)?",
+      questionType: "single_choice",
+      options: [
+        "Network: 192.168.10.64, Broadcast: 192.168.10.95",
+        "Network: 192.168.10.0, Broadcast: 192.168.10.127",
+        "Network: 192.168.10.64, Broadcast: 192.168.10.127",
+        "Network: 192.168.10.32, Broadcast: 192.168.10.63",
+      ],
+      correctAnswer: "Network: 192.168.10.64, Broadcast: 192.168.10.95",
+      subjectCode: "CN",
+      topicName: "Subnetting",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "A /27 mask has a block size of 256 - 224 = 32. Subnet ranges: 0-31, 32-63, 64-95. 74 falls in the 64-95 range. Network = 192.168.10.64, Broadcast = 192.168.10.95.",
+      expectedTime: 60,
+    },
+    // DBMS (4 questions)
+    {
+      question: "In transaction processing, which concurrency anomaly is defined as a transaction reading data that has been modified by another concurrent uncommitted transaction?",
+      questionType: "single_choice",
+      options: ["Dirty Read", "Non-repeatable Read", "Phantom Read", "Lost Update"],
+      correctAnswer: "Dirty Read",
+      subjectCode: "DBMS",
+      topicName: "Transactions",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "A Dirty Read occurs at Read Uncommitted isolation when transaction T1 modifies a row and transaction T2 reads that row before T1 commits or rolls back.",
+      expectedTime: 30,
+    },
+    {
+      question: "What does Strict Two-Phase Locking (Strict 2PL) guarantee that standard basic 2PL does not?",
+      questionType: "single_choice",
+      options: [
+        "It prevents cascading rollbacks and guarantees serializability",
+        "It eliminates deadlocks completely",
+        "It allows acquiring locks after releasing them",
+        "It guarantees starvation-free execution",
+      ],
+      correctAnswer: "It prevents cascading rollbacks and guarantees serializability",
+      subjectCode: "DBMS",
+      topicName: "Concurrency Control",
+      difficulty: "hard",
+      marks: 2,
+      explanation: "Strict 2PL holds all exclusive (X) locks until transaction commit or abort. This ensures that no other transaction can read uncommitted modifications, preventing cascading aborts.",
+      expectedTime: 60,
+    },
+    {
+      question: "In a B+ Tree index, why are all actual table data record pointers stored exclusively in the leaf nodes rather than internal nodes?",
+      questionType: "single_choice",
+      options: [
+        "To maximize internal node fanout and enable sequential range scans via leaf node pointers",
+        "To prevent duplicate key values across the index",
+        "To avoid balancing the tree during deletions",
+        "To eliminate binary search in nodes",
+      ],
+      correctAnswer: "To maximize internal node fanout and enable sequential range scans via leaf node pointers",
+      subjectCode: "DBMS",
+      topicName: "Indexing",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Storing only routing keys in internal nodes maximizes node fanout, keeping the tree shallow. Storing all actual records in leaf nodes connected by a linked list allows rapid range scans.",
+      expectedTime: 45,
+    },
+    {
+      question: "Which relational algebra operation is used to express queries like 'Find all students who have enrolled in ALL courses offered by the CS department'?",
+      questionType: "single_choice",
+      options: ["Division (÷)", "Cartesian Product (×)", "Natural Join (⋈)", "Projection (π)"],
+      correctAnswer: "Division (÷)",
+      subjectCode: "DBMS",
+      topicName: "Relational Algebra",
+      difficulty: "hard",
+      marks: 2,
+      explanation: "The division operator (R ÷ S) yields tuples in R that match every tuple in S, representing universal quantification ('for all').",
+      expectedTime: 45,
+    },
+    // OPERATING SYSTEMS (4 questions)
+    {
+      question: "Which CPU scheduling algorithm is the preemptive counterpart of Shortest Job First (SJF) and minimizes average waiting time?",
+      questionType: "single_choice",
+      options: [
+        "Shortest Remaining Time First (SRTF)",
+        "Round Robin (RR)",
+        "Highest Response Ratio Next (HRRN)",
+        "Priority Scheduling",
+      ],
+      correctAnswer: "Shortest Remaining Time First (SRTF)",
+      subjectCode: "OS",
+      topicName: "CPU Scheduling",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "SRTF preempts the executing process if a new process arrives with a shorter remaining burst time, yielding optimal average waiting time.",
+      expectedTime: 30,
+    },
+    {
+      question: "If memory access time is 100 ns, TLB lookup time is 20 ns, and the TLB hit ratio is 90%, what is the Effective Memory Access Time (EMAT) with a single-level page table?",
+      questionType: "single_choice",
+      options: ["130 ns", "120 ns", "110 ns", "200 ns"],
+      correctAnswer: "130 ns",
+      subjectCode: "OS",
+      topicName: "Memory Management",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "EMAT = Hit_ratio × (TLB + Mem) + (1 - Hit_ratio) × (TLB + 2 × Mem) = 0.90 × (20 + 100) + 0.10 × (20 + 200) = 0.90 × 120 + 0.10 × 220 = 108 + 22 = 130 ns.",
+      expectedTime: 60,
+    },
+    {
+      question: "A counting semaphore S is initialized to 7. Then, 12 wait() operations and 8 signal() operations are successfully executed on S. What is the final value of S?",
+      questionType: "single_choice",
+      options: ["3", "-5", "5", "0"],
+      correctAnswer: "3",
+      subjectCode: "OS",
+      topicName: "Process Synchronization",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "Value = Initial - wait + signal = 7 - 12 + 8 = 3.",
+      expectedTime: 30,
+    },
+    {
+      question: "Belady's Anomaly describes a counterintuitive scenario where increasing page frames causes more page faults. Which page replacement algorithm can exhibit this behavior?",
+      questionType: "single_choice",
+      options: [
+        "FIFO (First In First Out)",
+        "LRU (Least Recently Used)",
+        "Optimal (OPT)",
+        "LFU with aging",
+      ],
+      correctAnswer: "FIFO (First In First Out)",
+      subjectCode: "OS",
+      topicName: "Virtual Memory",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "FIFO is not a stack algorithm (it lacks the inclusion property), which allows Belady's Anomaly to occur under specific page reference patterns.",
+      expectedTime: 45,
+    },
+    // OBJECT ORIENTED PROGRAMMING (4 questions)
+    {
+      question: "A program defines a Rectangle class and a Square subclass that overrides setWidth and setHeight to enforce equal sides. If a function expecting a Rectangle fails when passed a Square, which SOLID principle is violated?",
+      questionType: "single_choice",
+      options: [
+        "Liskov Substitution Principle (LSP)",
+        "Open-Closed Principle (OCP)",
+        "Interface Segregation Principle (ISP)",
+        "Dependency Inversion Principle (DIP)",
+      ],
+      correctAnswer: "Liskov Substitution Principle (LSP)",
+      subjectCode: "OOP",
+      topicName: "SOLID Principles",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "LSP asserts that subtypes must be substitutable for their base types without altering program correctness. Modifying the contract of setWidth/setHeight breaks LSP.",
+      expectedTime: 45,
+    },
+    {
+      question: "Which design pattern is best suited for instantiating objects without exposing creation logic directly to client code, using a common interface?",
+      questionType: "single_choice",
+      options: [
+        "Factory Method Pattern",
+        "Observer Pattern",
+        "Decorator Pattern",
+        "Adapter Pattern",
+      ],
+      correctAnswer: "Factory Method Pattern",
+      subjectCode: "OOP",
+      topicName: "Design Patterns",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "Factory Method encapsulates object creation, allowing the system to determine the exact class to instantiate at runtime.",
+      expectedTime: 30,
+    },
+    {
+      question: "In C++, dynamic binding (runtime polymorphism) of member functions is implemented internally using which mechanism?",
+      questionType: "single_choice",
+      options: [
+        "Virtual Method Table (vtable) with a virtual pointer (vptr)",
+        "Global symbol hash table",
+        "Abstract Syntax Tree (AST)",
+        "Function call stack unwinding",
+      ],
+      correctAnswer: "Virtual Method Table (vtable) with a virtual pointer (vptr)",
+      subjectCode: "OOP",
+      topicName: "Polymorphism",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "The compiler constructs a vtable of function pointers for classes with virtual functions and attaches a vptr to each class instance.",
+      expectedTime: 45,
+    },
+    {
+      question: "How do modern object-oriented languages (like Java 8+ or TypeScript) handle multiple interface inheritance while preventing state-related diamond problems?",
+      questionType: "single_choice",
+      options: [
+        "Interfaces define behavior without instance fields; default method conflicts must be explicitly resolved by the class",
+        "Interfaces can only contain private static methods",
+        "Multiple interface inheritance is rejected at compile time",
+        "The compiler automatically selects the method from the first listed interface",
+      ],
+      correctAnswer: "Interfaces define behavior without instance fields; default method conflicts must be explicitly resolved by the class",
+      subjectCode: "OOP",
+      topicName: "Interfaces & Abstract Classes",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "Interfaces eliminate the classic diamond problem by forbidding instance state. When default method signatures collide, the implementing class must override and resolve the conflict explicitly.",
+      expectedTime: 45,
+    },
+    // SQL (5 questions)
+    {
+      question: "Given employee salaries [5000, 4000, 4000, 3000], what ranks are returned by DENSE_RANK() OVER (ORDER BY salary DESC)?",
+      questionType: "single_choice",
+      options: ["1, 2, 2, 3", "1, 2, 3, 4", "1, 2, 2, 4", "1, 1, 2, 3"],
+      correctAnswer: "1, 2, 2, 3",
+      subjectCode: "SQL",
+      topicName: "Window Functions",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "DENSE_RANK assigns consecutive rank integers without gaps for tied values (1, 2, 2, 3). RANK() would skip to 4 (1, 2, 2, 4).",
+      expectedTime: 30,
+    },
+    {
+      question: "What is the primary difference between the WHERE clause and the HAVING clause in SQL?",
+      questionType: "single_choice",
+      options: [
+        "WHERE filters rows prior to aggregation; HAVING filters groups after GROUP BY",
+        "WHERE only operates on indexed columns; HAVING operates on non-indexed columns",
+        "HAVING is evaluated before the FROM clause",
+        "WHERE can evaluate aggregate functions like COUNT(), while HAVING cannot",
+      ],
+      correctAnswer: "WHERE filters rows prior to aggregation; HAVING filters groups after GROUP BY",
+      subjectCode: "SQL",
+      topicName: "Aggregations",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "In SQL logical execution order, WHERE filters base table rows before grouping, and HAVING filters the resulting aggregated groups.",
+      expectedTime: 30,
+    },
+    {
+      question: "Why does the EXISTS clause typically outperform the IN clause when querying against a subquery table with NULL values in the correlated column?",
+      questionType: "single_choice",
+      options: [
+        "EXISTS evaluates to true upon encountering the first match and handles three-valued NULL logic safely",
+        "IN automatically disables index scans",
+        "EXISTS loads the entire subquery dataset into client memory",
+        "IN cannot be used with integers",
+      ],
+      correctAnswer: "EXISTS evaluates to true upon encountering the first match and handles three-valued NULL logic safely",
+      subjectCode: "SQL",
+      topicName: "Subqueries",
+      difficulty: "hard",
+      marks: 2,
+      explanation: "EXISTS stops scanning as soon as a single match is found and is unaffected by NULLs in the subquery, avoiding the three-valued logic trap that causes NOT IN to fail.",
+      expectedTime: 60,
+    },
+    {
+      question: "In a relational database schema, what is the effect of the constraint 'ON DELETE SET NULL' on a foreign key column Employee(dept_id)?",
+      questionType: "single_choice",
+      options: [
+        "When a Department is deleted, dept_id in associated Employee rows is updated to NULL instead of deleting the employee",
+        "When an Employee is deleted, the corresponding Department is set to NULL",
+        "Department deletion is rejected if any employees exist",
+        "All employee records in that department are permanently deleted",
+      ],
+      correctAnswer: "When a Department is deleted, dept_id in associated Employee rows is updated to NULL instead of deleting the employee",
+      subjectCode: "SQL",
+      topicName: "Constraints",
+      difficulty: "easy",
+      marks: 2,
+      explanation: "ON DELETE SET NULL preserves child rows by setting their foreign key reference to NULL when the referenced parent record is removed.",
+      expectedTime: 30,
+    },
+    {
+      question: "How does the TRUNCATE TABLE command differ fundamentally from DELETE FROM table in PostgreSQL?",
+      questionType: "single_choice",
+      options: [
+        "TRUNCATE deallocates data pages directly, does not fire individual row-level ON DELETE triggers, and is significantly faster",
+        "TRUNCATE cannot be rolled back inside a transaction block",
+        "DELETE cannot use a WHERE clause",
+        "TRUNCATE creates a temporary table replica",
+      ],
+      correctAnswer: "TRUNCATE deallocates data pages directly, does not fire individual row-level ON DELETE triggers, and is significantly faster",
+      subjectCode: "SQL",
+      topicName: "DDL & DML",
+      difficulty: "medium",
+      marks: 2,
+      explanation: "TRUNCATE releases data storage pages at the file level rather than deleting rows individually, avoiding per-row trigger overhead. In Postgres, it remains transaction-safe.",
+      expectedTime: 45,
+    },
   ];
 
   // Insert all questions
@@ -2127,26 +2567,43 @@ async function seed() {
   // ==========================================
   console.log("🔗 Linking questions to tests...");
 
-  // Helper to pick N questions from subjects
+  // Helper to deterministically pick N questions from subjects
   function pickQuestions(
     subjectCodes: string[],
-    count: number
+    count: number,
+    seedOffset: number = 0
   ): typeof insertedQuestions {
     const pool: typeof insertedQuestions = [];
     subjectCodes.forEach((code) => {
       if (questionsBySubject[code]) {
-        pool.push(...questionsBySubject[code]);
+        const sorted = [...questionsBySubject[code]].sort((a, b) =>
+          a.question.localeCompare(b.question)
+        );
+        pool.push(...sorted);
       }
     });
-    // Shuffle and pick
-    const shuffled = pool.sort(() => Math.random() - 0.5);
-    return shuffled.slice(0, count);
+
+    const selected: typeof insertedQuestions = [];
+    for (let i = 0; i < count; i++) {
+      const idx = (i * 7 + seedOffset) % pool.length;
+      if (!selected.includes(pool[idx])) {
+        selected.push(pool[idx]);
+      }
+    }
+    for (const q of pool) {
+      if (selected.length >= count) break;
+      if (!selected.includes(q)) {
+        selected.push(q);
+      }
+    }
+    return selected.slice(0, count);
   }
 
   // Baseline: 50 questions across all subjects
   const baselineQuestions = pickQuestions(
     ["APT", "DSA", "DBMS", "OS", "CN", "OOP", "SQL"],
-    50
+    50,
+    1
   );
   await db.insert(testQuestions).values(
     baselineQuestions.map((q, i) => ({
@@ -2157,7 +2614,9 @@ async function seed() {
   );
 
   // Aptitude: all aptitude questions
-  const aptQuestions = questionsBySubject["APT"] || [];
+  const aptQuestions = (questionsBySubject["APT"] || []).slice().sort((a, b) =>
+    a.question.localeCompare(b.question)
+  );
   await db.insert(testQuestions).values(
     aptQuestions.map((q, i) => ({
       testId: aptitudeTest[0].id,
@@ -2169,7 +2628,8 @@ async function seed() {
   // CS Fundamentals: DSA + DBMS + OS + CN + OOP questions
   const csQuestions = pickQuestions(
     ["DSA", "DBMS", "OS", "CN", "OOP"],
-    50
+    50,
+    2
   );
   await db.insert(testQuestions).values(
     csQuestions.map((q, i) => ({
@@ -2182,7 +2642,8 @@ async function seed() {
   // Mixed: mix of everything
   const mixedQuestions = pickQuestions(
     ["APT", "DSA", "DBMS", "OS", "CN", "OOP", "SQL"],
-    60
+    60,
+    3
   );
   await db.insert(testQuestions).values(
     mixedQuestions.map((q, i) => ({
@@ -2195,13 +2656,14 @@ async function seed() {
   console.log("  ✓ Test-question links created");
 
   // ==========================================
-  // 6. ADMIN USER (optional demo user)
+  // 6. SEED USERS (Stable UUIDs across re-seeds)
   // ==========================================
-  console.log("👤 Creating admin user...");
+  console.log("👤 Creating seed users with stable UUIDs...");
   const adminPasswordHash = await bcrypt.hash("admin123", 12);
   const adminUser = await db
     .insert(users)
     .values({
+      id: "672c0461-07da-48e6-94b1-a816d4d9eac4",
       email: "admin@placementos.dev",
       passwordHash: adminPasswordHash,
       isAdmin: true,
@@ -2217,7 +2679,27 @@ async function seed() {
     preferredLanguage: "TypeScript",
   });
 
-  console.log("  ✓ Admin user created (admin@placementos.dev / admin123)");
+  const studentPasswordHash = await bcrypt.hash("alex123", 10);
+  const studentUser = await db
+    .insert(users)
+    .values({
+      id: "00000000-0000-0000-0000-000000000002",
+      email: "alex.chen@placementos.dev",
+      passwordHash: studentPasswordHash,
+      isAdmin: false,
+    })
+    .returning();
+
+  await db.insert(profiles).values({
+    userId: studentUser[0].id,
+    name: "Alex Chen",
+    college: "Apex Institute of Technology",
+    branch: "Computer Science",
+    graduationYear: 2025,
+    preferredLanguage: "C++",
+  });
+
+  console.log("  ✓ Admin & student users created with stable UUIDs");
 
   // ==========================================
   // DONE

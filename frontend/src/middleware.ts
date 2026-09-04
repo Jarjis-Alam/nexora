@@ -11,6 +11,7 @@ export default auth((req) => {
   const publicPaths = ["/", "/auth/login", "/auth/register"];
   const isPublic =
     publicPaths.includes(pathname) ||
+    pathname.startsWith("/auth/") ||
     pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon");

@@ -3,19 +3,16 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import {
   users,
   profiles,
-  subjects,
-  topics,
   questions,
   tests,
-  testQuestions,
   attempts,
   answers,
   skillScores,
 } from "../db/schema";
-import { eq, and, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { gradeAttempt } from "../server/grading";
-import { calculateReadiness, detectWeakAreas } from "../server/readiness";
+import { calculateReadiness } from "../server/readiness";
 import { getAttemptExamState } from "../server/tests";
 
 const DATABASE_URL =
@@ -107,7 +104,7 @@ async function runTests() {
 
     // Verify none of the questions contain correctAnswer or explanation
     const leakedAnswer = examQuestions.some(
-      (q: any) => q.correctAnswer !== undefined || q.explanation !== undefined
+      (q: Record<string, unknown>) => q.correctAnswer !== undefined || q.explanation !== undefined
     );
     assert(
       !leakedAnswer,

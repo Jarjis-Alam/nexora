@@ -26,10 +26,12 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     preferredLanguage: initialProfile.preferredLanguage || "C++",
   });
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    setErrorMsg(null);
     try {
       const res = await fetch("/api/profile", {
         method: "PUT",
@@ -37,15 +39,17 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
         body: JSON.stringify(formData),
       });
 
+      const data = await res.json().catch(() => ({}));
+
       if (!res.ok) {
-        throw new Error("Failed to update profile");
+        throw new Error(data.error || "Failed to update profile");
       }
 
       setIsEditing(false);
       router.refresh();
-    } catch (err) {
-      console.error(err);
-      alert("Failed to save changes.");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Failed to save profile changes.";
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
@@ -59,7 +63,10 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           Personal Info
         </div>
         <button
-          onClick={() => setIsEditing(!isEditing)}
+          onClick={() => {
+            setIsEditing(!isEditing);
+            setErrorMsg(null);
+          }}
           className="text-label-xs font-mono text-primary-text hover:text-primary transition-colors cursor-pointer"
         >
           {isEditing ? "Cancel" : "Edit Details"}
@@ -68,6 +75,11 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
       {isEditing ? (
         <form onSubmit={handleSave} className="space-y-3 pt-2 text-label-xs font-mono">
+          {errorMsg && (
+            <div className="p-3 bg-error/10 border border-error/20 rounded text-error text-label-xs font-mono">
+              {errorMsg}
+            </div>
+          )}
           <div>
             <label className="text-text-muted uppercase block mb-1">Full Name</label>
             <input

@@ -7,6 +7,7 @@ import {
   answers,
   subjects,
   topics,
+  users,
 } from "@/db/schema";
 import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { gradeAttempt } from "./grading";
@@ -120,6 +121,12 @@ export async function getTestDetails(testId: string, userId: string) {
 }
 
 export async function startOrResumeAttempt(testId: string, userId: string) {
+  // Check if user exists
+  const userList = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
+  if (userList.length === 0) {
+    throw new Error("User not found or session invalid. Please log in again.");
+  }
+
   // Check if test exists
   const testList = await db.select().from(tests).where(eq(tests.id, testId)).limit(1);
   if (testList.length === 0) {
@@ -253,7 +260,7 @@ export async function getAttemptExamState(attemptId: string, userId: string) {
   const answersMap: Record<
     string,
     {
-      selectedAnswer: any;
+      selectedAnswer: unknown;
       markedForReview: boolean;
       timeSpent: number;
     }
@@ -286,7 +293,7 @@ export async function saveAnswer(
   attemptId: string,
   userId: string,
   questionId: string,
-  selectedAnswer: any,
+  selectedAnswer: unknown,
   timeSpentSec: number = 0
 ) {
   // Verify ownership & status

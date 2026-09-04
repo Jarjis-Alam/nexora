@@ -23,7 +23,7 @@ export async function startAttemptAction(testId: string) {
 export async function saveAnswerAction(
   attemptId: string,
   questionId: string,
-  selectedAnswer: any,
+  selectedAnswer: unknown,
   timeSpentSec: number = 0
 ) {
   const session = await auth();

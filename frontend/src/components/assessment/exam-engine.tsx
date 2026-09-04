@@ -56,15 +56,23 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
     initialState.remainingSeconds
   );
   const [isSaving, setIsSaving] = useState(false);
-  const [lastSavedTime, setLastSavedTime] = useState<Date>(new Date());
+  const [, setLastSavedTime] = useState<Date>(new Date());
   const [showSubmitModal, setShowSubmitModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Authoritative wall-clock target end time to eliminate setInterval throttling drift
+  const targetEndTimeRef = useRef<number>(
+    Date.now() + Math.max(0, initialState.remainingSeconds) * 1000
+  );
+  const isSubmittingRef = useRef(false);
 
   const currentQ = questions[currentIndex];
   const totalQuestions = questions.length;
 
-  // Auto-submit helper
+  // Auto-submit / Final submit helper with double-submission guard
   const handleFinalSubmit = useCallback(async () => {
+    if (isSubmittingRef.current) return;
+    isSubmittingRef.current = true;
     setIsSubmitting(true);
     try {
       await submitTestAttemptAction(attemptId);
@@ -72,75 +80,96 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
     } catch (err) {
       console.error("Submission failed:", err);
       alert("Submission encountered an issue. Retrying...");
+      isSubmittingRef.current = false;
       setIsSubmitting(false);
     }
   }, [attemptId, testId, router]);
 
-  // Live Timer Countdown
+  // Wall-clock synced live timer countdown with visibility change recovery
   useEffect(() => {
-    const timer = setInterval(() => {
-      setRemainingSeconds((prev) => {
-        if (prev <= 1) {
-          clearInterval(timer);
-          handleFinalSubmit();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+    const updateRemaining = () => {
+      const remaining = Math.max(
+        0,
+        Math.ceil((targetEndTimeRef.current - Date.now()) / 1000)
+      );
+      setRemainingSeconds(remaining);
+      if (remaining <= 0 && !isSubmittingRef.current) {
+        handleFinalSubmit();
+      }
+    };
 
-    return () => clearInterval(timer);
+    updateRemaining();
+    const timer = setInterval(updateRemaining, 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        updateRemaining();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(timer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [handleFinalSubmit]);
 
   // Sync active question index to server for refresh recovery
-  const handleQuestionChange = async (index: number) => {
-    if (index < 0 || index >= totalQuestions) return;
-    setCurrentIndex(index);
-    setQuestionIndexAction(attemptId, index).catch(console.error);
-  };
+  const handleQuestionChange = useCallback(
+    async (index: number) => {
+      if (index < 0 || index >= totalQuestions) return;
+      setCurrentIndex(index);
+      setQuestionIndexAction(attemptId, index).catch(console.error);
+    },
+    [attemptId, totalQuestions]
+  );
 
   // Handle selecting an answer
-  const handleSelectOption = async (option: string) => {
-    if (!currentQ) return;
+  const handleSelectOption = useCallback(
+    async (option: string) => {
+      if (!currentQ) return;
 
-    let newSelected: any;
-    const existing = answers[currentQ.id]?.selectedAnswer;
+      let newSelected: any;
+      const existing = answers[currentQ.id]?.selectedAnswer;
 
-    if (currentQ.questionType === "single_choice") {
-      newSelected = option;
-    } else {
-      // Multiple choice toggle
-      const arr: string[] = Array.isArray(existing) ? [...existing] : [];
-      if (arr.includes(option)) {
-        newSelected = arr.filter((item) => item !== option);
+      if (currentQ.questionType === "single_choice") {
+        newSelected = option;
       } else {
-        newSelected = [...arr, option];
+        // Multiple choice toggle
+        const arr: string[] = Array.isArray(existing) ? [...existing] : [];
+        if (arr.includes(option)) {
+          newSelected = arr.filter((item) => item !== option);
+        } else {
+          newSelected = [...arr, option];
+        }
       }
-    }
 
-    // Optimistic local state update
-    setAnswers((prev) => ({
-      ...prev,
-      [currentQ.id]: {
-        selectedAnswer: newSelected,
-        markedForReview: prev[currentQ.id]?.markedForReview || false,
-        timeSpent: (prev[currentQ.id]?.timeSpent || 0) + 1,
-      },
-    }));
+      // Optimistic local state update
+      setAnswers((prev) => ({
+        ...prev,
+        [currentQ.id]: {
+          selectedAnswer: newSelected,
+          markedForReview: prev[currentQ.id]?.markedForReview || false,
+          timeSpent: (prev[currentQ.id]?.timeSpent || 0) + 1,
+        },
+      }));
 
-    setIsSaving(true);
-    try {
-      await saveAnswerAction(attemptId, currentQ.id, newSelected, 1);
-      setLastSavedTime(new Date());
-    } catch (err) {
-      console.error("Failed to save answer:", err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
+      setIsSaving(true);
+      try {
+        await saveAnswerAction(attemptId, currentQ.id, newSelected, 1);
+        setLastSavedTime(new Date());
+      } catch (err) {
+        console.error("Failed to save answer:", err);
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    [currentQ, answers, attemptId]
+  );
 
   // Toggle mark for review
-  const handleToggleReview = async () => {
+  const handleToggleReview = useCallback(async () => {
     if (!currentQ) return;
 
     const currentReview = answers[currentQ.id]?.markedForReview || false;
@@ -160,7 +189,65 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
     } catch (err) {
       console.error("Failed to toggle review mark:", err);
     }
-  };
+  }, [currentQ, answers, attemptId]);
+
+  // Global Keyboard Navigation (A-D / 1-4 for options, arrows/P/N for navigation, M for review, Escape for modal)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // If modal is open, Escape closes modal
+      if (showSubmitModal) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          setShowSubmitModal(false);
+        }
+        return;
+      }
+
+      // Ignore if typing in an input/textarea
+      const targetTag = (e.target as HTMLElement)?.tagName?.toLowerCase();
+      if (targetTag === "input" || targetTag === "textarea" || targetTag === "select") {
+        return;
+      }
+
+      if (e.key === "ArrowLeft" || e.key === "p" || e.key === "P") {
+        if (currentIndex > 0) {
+          e.preventDefault();
+          handleQuestionChange(currentIndex - 1);
+        }
+      } else if (e.key === "ArrowRight" || e.key === "n" || e.key === "N") {
+        if (currentIndex < totalQuestions - 1) {
+          e.preventDefault();
+          handleQuestionChange(currentIndex + 1);
+        }
+      } else if (e.key === "m" || e.key === "M") {
+        e.preventDefault();
+        handleToggleReview();
+      } else if (currentQ && Array.isArray(currentQ.options)) {
+        let optIndex = -1;
+        const lowerKey = e.key.toLowerCase();
+        if (lowerKey === "a" || e.key === "1") optIndex = 0;
+        else if (lowerKey === "b" || e.key === "2") optIndex = 1;
+        else if (lowerKey === "c" || e.key === "3") optIndex = 2;
+        else if (lowerKey === "d" || e.key === "4") optIndex = 3;
+
+        if (optIndex >= 0 && optIndex < currentQ.options.length) {
+          e.preventDefault();
+          handleSelectOption(currentQ.options[optIndex]);
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [
+    showSubmitModal,
+    currentIndex,
+    totalQuestions,
+    currentQ,
+    handleQuestionChange,
+    handleToggleReview,
+    handleSelectOption,
+  ]);
 
   // Calculate question status counts
   let answeredCount = 0;
@@ -276,11 +363,13 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
           </div>
 
           {/* Grid of Question numbers */}
-          <div className="grid grid-cols-5 gap-2 font-mono text-label-xs">
+          <div className="grid grid-cols-5 gap-2 font-mono text-label-xs" role="navigation" aria-label="Question list">
             {questions.map((q, idx) => (
               <button
                 key={q.id}
                 onClick={() => handleQuestionChange(idx)}
+                aria-label={`Go to question ${idx + 1}`}
+                aria-current={idx === currentIndex ? "true" : undefined}
                 className={`h-9 rounded flex items-center justify-center transition-all cursor-pointer ${getQuestionStatus(
                   q.id,
                   idx
@@ -326,7 +415,11 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
               </div>
 
               {/* Options */}
-              <div className="space-y-3 pt-2">
+              <div
+                className="space-y-3 pt-2"
+                role={currentQ.questionType === "single_choice" ? "radiogroup" : "group"}
+                aria-label={`Options for Question ${currentIndex + 1}`}
+              >
                 {Array.isArray(currentQ.options) &&
                   currentQ.options.map((opt: string, optIdx: number) => {
                     const currentSelected = answers[currentQ.id]?.selectedAnswer;
@@ -342,6 +435,9 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                       <button
                         key={optIdx}
                         onClick={() => handleSelectOption(opt)}
+                        role={currentQ.questionType === "single_choice" ? "radio" : "checkbox"}
+                        aria-checked={isSelected}
+                        aria-label={`Option ${optionLetter}: ${opt}`}
                         className={`w-full text-left p-4 rounded-lg border transition-all flex items-start gap-4 cursor-pointer ${
                           isSelected
                             ? "bg-primary/10 border-primary text-text-primary shadow-sm"
@@ -360,6 +456,9 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                         <span className="text-body-sm leading-relaxed flex-1">
                           {opt}
                         </span>
+                        <span className="text-[10px] font-mono text-text-muted/60 uppercase hidden sm:inline-block">
+                          [{optionLetter}]
+                        </span>
                       </button>
                     );
                   })}
@@ -376,6 +475,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
             <button
               onClick={() => handleQuestionChange(currentIndex - 1)}
               disabled={currentIndex === 0}
+              aria-label="Previous question"
               className="bg-surface border border-border text-text-primary font-medium text-body-sm px-5 py-2.5 rounded hover:bg-surface-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
@@ -384,6 +484,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
 
             <button
               onClick={handleToggleReview}
+              aria-label={answers[currentQ?.id]?.markedForReview ? "Unmark review" : "Mark for review"}
               className={`font-medium text-body-sm px-4 py-2.5 rounded border transition-colors flex items-center gap-2 cursor-pointer ${
                 answers[currentQ?.id]?.markedForReview
                   ? "bg-tertiary/20 text-tertiary border-tertiary"
@@ -404,6 +505,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                   handleQuestionChange(currentIndex + 1);
                 }
               }}
+              aria-label={currentIndex === totalQuestions - 1 ? "Review and submit assessment" : "Next question"}
               className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded hover:bg-primary-text transition-colors flex items-center gap-2 cursor-pointer"
             >
               {currentIndex === totalQuestions - 1 ? (
@@ -424,10 +526,15 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
 
       {/* Submission Confirmation Modal */}
       {showSubmitModal && (
-        <div className="fixed inset-0 z-50 bg-base/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="submit-modal-title"
+          className="fixed inset-0 z-50 bg-base/80 backdrop-blur-sm flex items-center justify-center p-4"
+        >
           <div className="bg-surface border border-border rounded-xl p-8 max-w-md w-full shadow-2xl space-y-6">
             <div>
-              <h3 className="text-title-md font-bold text-text-primary mb-1">
+              <h3 id="submit-modal-title" className="text-title-md font-bold text-text-primary mb-1">
                 Submit Assessment?
               </h3>
               <p className="text-body-sm text-text-secondary">
