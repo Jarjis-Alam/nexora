@@ -2,7 +2,7 @@
 @import "tailwindcss";
 
 /* ============================================
-   PLACEMENT OS — Technical Precision Design System
+   NEXORA — Technical Precision Design System
    Tailwind v4 CSS-based configuration
    ============================================ */
 
@@ -61,6 +61,7 @@
 /* === Base Styles === */
 html {
   color-scheme: dark;
+  scroll-behavior: smooth;
 }
 
 body {

@@ -6,8 +6,10 @@ import {
   tests,
   skillScores,
   testQuestions,
+  attemptQuestions,
 } from "@/db/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, count, sql } from "drizzle-orm";
+import { round2 } from "@/lib/utils";
 
 export async function gradeAttempt(attemptId: string, userId: string) {
   // 1. Verify ownership and that attempt is in_progress
@@ -39,19 +41,54 @@ export async function gradeAttempt(attemptId: string, userId: string) {
   }
   const test = testList[0];
 
-  // 3. Load all questions for this test along with correct answer keys
-  const testQuestionRows = await db
-    .select({
-      questionId: questions.id,
-      questionType: questions.questionType,
-      correctAnswer: questions.correctAnswer,
-      marks: questions.marks,
-      subjectId: questions.subjectId,
-      topicId: questions.topicId,
-    })
-    .from(testQuestions)
-    .innerJoin(questions, eq(testQuestions.questionId, questions.id))
-    .where(eq(testQuestions.testId, test.id));
+  // Determine negative marking parameters from attempt snapshot (falling back to parent test for legacy attempts)
+  const isNegativeMarkingActive = attempt.negativeMarkingEnabled ?? test.negativeMarkingEnabled ?? false;
+  const penaltyRate = isNegativeMarkingActive ? Number(attempt.negativeMarkRate ?? test.negativeMarkRate ?? 0) : 0;
+
+  // 3. Load all questions for this attempt/test along with correct answer keys
+  const attemptQCountRes = await db
+    .select({ count: count() })
+    .from(attemptQuestions)
+    .where(eq(attemptQuestions.attemptId, attemptId));
+  const hasAttemptQuestions = Number(attemptQCountRes[0]?.count || 0) > 0;
+
+  const testQuestionRows = hasAttemptQuestions
+    ? await db
+        .select({
+          questionId: questions.id,
+          questionType: questions.questionType,
+          correctAnswer: questions.correctAnswer,
+          options: questions.options,
+          marks: questions.marks,
+          subjectId: questions.subjectId,
+          topicId: questions.topicId,
+          optionOrder: attemptQuestions.optionOrder,
+          questionTypeSnapshot: attemptQuestions.questionTypeSnapshot,
+          marksSnapshot: attemptQuestions.marksSnapshot,
+          optionsSnapshot: attemptQuestions.optionsSnapshot,
+          correctAnswerSnapshot: attemptQuestions.correctAnswerSnapshot,
+        })
+        .from(attemptQuestions)
+        .innerJoin(questions, eq(attemptQuestions.questionId, questions.id))
+        .where(eq(attemptQuestions.attemptId, attemptId))
+    : await db
+        .select({
+          questionId: questions.id,
+          questionType: questions.questionType,
+          correctAnswer: questions.correctAnswer,
+          options: questions.options,
+          marks: questions.marks,
+          subjectId: questions.subjectId,
+          topicId: questions.topicId,
+          optionOrder: sql<null>`null`.as("optionOrder"),
+          questionTypeSnapshot: sql<null>`null`.as("questionTypeSnapshot"),
+          marksSnapshot: sql<null>`null`.as("marksSnapshot"),
+          optionsSnapshot: sql<null>`null`.as("optionsSnapshot"),
+          correctAnswerSnapshot: sql<null>`null`.as("correctAnswerSnapshot"),
+        })
+        .from(testQuestions)
+        .innerJoin(questions, eq(testQuestions.questionId, questions.id))
+        .where(eq(testQuestions.testId, test.id));
 
   // 4. Load all student answers for this attempt
   const studentAnswers = await db
@@ -72,7 +109,7 @@ export async function gradeAttempt(attemptId: string, userId: string) {
   // Track per-subject and per-topic aggregations
   const subjectAgg: Record<
     string,
-    { earned: number; total: number; correct: number; count: number }
+    { earned: number; total: number; correct: number; count: number; attempted: number }
   > = {};
   const topicAgg: Record<
     string,
@@ -82,6 +119,7 @@ export async function gradeAttempt(attemptId: string, userId: string) {
       total: number;
       correct: number;
       count: number;
+      attempted: number;
     }
   > = {};
 
@@ -91,12 +129,17 @@ export async function gradeAttempt(attemptId: string, userId: string) {
   }[] = [];
 
   for (const q of testQuestionRows) {
-    totalPossibleScore += q.marks;
+    // Phase 7C.1: Scoring configuration is frozen per attempt (marksSnapshot/questionTypeSnapshot),
+    // falling back to live question values only for historical attempts without snapshots.
+    const marks = q.marksSnapshot ?? q.marks;
+    const questionType = q.questionTypeSnapshot ?? q.questionType;
+
+    totalPossibleScore += marks;
 
     if (!subjectAgg[q.subjectId]) {
-      subjectAgg[q.subjectId] = { earned: 0, total: 0, correct: 0, count: 0 };
+      subjectAgg[q.subjectId] = { earned: 0, total: 0, correct: 0, count: 0, attempted: 0 };
     }
-    subjectAgg[q.subjectId].total += q.marks;
+    subjectAgg[q.subjectId].total += marks;
     subjectAgg[q.subjectId].count += 1;
 
     if (!topicAgg[q.topicId]) {
@@ -106,9 +149,10 @@ export async function gradeAttempt(attemptId: string, userId: string) {
         total: 0,
         correct: 0,
         count: 0,
+        attempted: 0,
       };
     }
-    topicAgg[q.topicId].total += q.marks;
+    topicAgg[q.topicId].total += marks;
     topicAgg[q.topicId].count += 1;
 
     const studentAns = answersMap.get(q.questionId);
@@ -116,33 +160,95 @@ export async function gradeAttempt(attemptId: string, userId: string) {
 
     if (studentAns && studentAns.selectedAnswer !== null && studentAns.selectedAnswer !== undefined) {
       totalAnsweredCount += 1;
+      subjectAgg[q.subjectId].attempted += 1;
+      topicAgg[q.topicId].attempted += 1;
 
-      // Evaluation based on question type
-      if (q.questionType === "single_choice") {
-        isCorrect =
-          String(studentAns.selectedAnswer).trim() ===
-          String(q.correctAnswer).trim();
-      } else if (q.questionType === "multiple_choice") {
-        // Set comparison
-        const studentArr = Array.isArray(studentAns.selectedAnswer)
-          ? studentAns.selectedAnswer.map(String).sort()
-          : [String(studentAns.selectedAnswer)];
-        const correctArr = Array.isArray(q.correctAnswer)
-          ? (q.correctAnswer as unknown[]).map(String).sort()
-          : [String(q.correctAnswer)];
+      // Resolve options and correct answer snapshots (safeguard against question bank mutations)
+      const rawOptions =
+        (q.optionsSnapshot as string[] | null) ||
+        (q.options as string[] | null) ||
+        [];
+      const rawCorrect =
+        q.correctAnswerSnapshot !== null &&
+        q.correctAnswerSnapshot !== undefined
+          ? q.correctAnswerSnapshot
+          : q.correctAnswer;
 
-        isCorrect =
-          studentArr.length === correctArr.length &&
-          studentArr.every((val, idx) => val === correctArr[idx]);
+      if (questionType === "single_choice") {
+        const studentChoiceStr = String(studentAns.selectedAnswer).trim();
+        if (studentChoiceStr.startsWith("opt_")) {
+          // Synthetic canonical option identity evaluation
+          const rawCorrectStr = String(rawCorrect).trim();
+          let canonicalCorrectOptId: string | null = null;
+          if (rawCorrectStr.startsWith("opt_")) {
+            canonicalCorrectOptId = rawCorrectStr;
+          } else {
+            const idx = rawOptions.findIndex(
+              (opt: string) => opt.trim() === rawCorrectStr
+            );
+            if (idx >= 0) {
+              canonicalCorrectOptId = `opt_${idx}`;
+            }
+          }
+          isCorrect =
+            canonicalCorrectOptId !== null &&
+            studentChoiceStr === canonicalCorrectOptId;
+        } else {
+          // Historical fallback: literal text matching
+          isCorrect = studentChoiceStr === String(rawCorrect).trim();
+        }
+      } else if (questionType === "multiple_choice") {
+        const studentRaw = studentAns.selectedAnswer;
+        const studentArr = Array.isArray(studentRaw)
+          ? studentRaw.map(String)
+          : [String(studentRaw)];
+
+        const hasOptionIds = studentArr.some((item) => item.startsWith("opt_"));
+        if (hasOptionIds) {
+          const rawCorrectArr = Array.isArray(rawCorrect)
+            ? (rawCorrect as unknown[]).map(String)
+            : [String(rawCorrect)];
+
+          const canonicalCorrectIds = rawCorrectArr
+            .map((c) => {
+              const cStr = c.trim();
+              if (cStr.startsWith("opt_")) return cStr;
+              const idx = rawOptions.findIndex((opt: string) => opt.trim() === cStr);
+              return idx >= 0 ? `opt_${idx}` : cStr;
+            })
+            .sort();
+
+          const sortedStudentArr = [...studentArr].sort();
+          isCorrect =
+            sortedStudentArr.length === canonicalCorrectIds.length &&
+            sortedStudentArr.every((val, idx) => val === canonicalCorrectIds[idx]);
+        } else {
+          // Historical fallback
+          const correctArr = Array.isArray(rawCorrect)
+            ? (rawCorrect as unknown[]).map(String).sort()
+            : [String(rawCorrect)];
+          const sortedStudent = [...studentArr].sort();
+          isCorrect =
+            sortedStudent.length === correctArr.length &&
+            sortedStudent.every((val, idx) => val === correctArr[idx]);
+        }
       }
 
       if (isCorrect) {
-        totalScore += q.marks;
+        totalScore = round2(totalScore + marks);
         correctCount += 1;
-        subjectAgg[q.subjectId].earned += q.marks;
+        subjectAgg[q.subjectId].earned = round2(subjectAgg[q.subjectId].earned + marks);
         subjectAgg[q.subjectId].correct += 1;
-        topicAgg[q.topicId].earned += q.marks;
+        topicAgg[q.topicId].earned = round2(topicAgg[q.topicId].earned + marks);
         topicAgg[q.topicId].correct += 1;
+      } else {
+        // Incorrect answer: deduct proportional penalty if negative marking active
+        if (isNegativeMarkingActive && penaltyRate > 0) {
+          const penalty = round2(marks * penaltyRate);
+          totalScore = round2(totalScore - penalty);
+          subjectAgg[q.subjectId].earned = round2(subjectAgg[q.subjectId].earned - penalty);
+          topicAgg[q.topicId].earned = round2(topicAgg[q.topicId].earned - penalty);
+        }
       }
 
       answerUpdates.push({
@@ -150,6 +256,7 @@ export async function gradeAttempt(attemptId: string, userId: string) {
         isCorrect,
       });
     }
+    // Note: Unanswered questions ALWAYS receive 0 marks and 0 penalty
   }
 
   // 5. Update each student answer with isCorrect
@@ -161,9 +268,10 @@ export async function gradeAttempt(attemptId: string, userId: string) {
   }
 
   // 6. Calculate accuracy and normalized score out of 100
+  const rawScore = totalScore;
   const normalizedScore =
     totalPossibleScore > 0
-      ? Math.round((totalScore / totalPossibleScore) * 100)
+      ? Math.max(0, Math.round((rawScore / totalPossibleScore) * 100))
       : 0;
 
   const accuracy =
@@ -203,27 +311,27 @@ export async function gradeAttempt(attemptId: string, userId: string) {
 
   // Subject skill scores
   for (const [subjId, val] of Object.entries(subjectAgg)) {
-    const subjAcc = val.total > 0 ? (val.earned / val.total) * 100 : 0;
+    const subjAcc = val.attempted > 0 ? Math.round((val.correct / val.attempted) * 100) : 0;
     skillScoreInserts.push({
       attemptId,
       subjectId: subjId,
       topicId: null,
-      score: val.earned,
+      score: Math.max(0, val.earned),
       total: val.total,
-      accuracy: Math.round(subjAcc),
+      accuracy: Math.max(0, Math.min(100, subjAcc)),
     });
   }
 
   // Topic skill scores
   for (const [topId, val] of Object.entries(topicAgg)) {
-    const topAcc = val.total > 0 ? (val.earned / val.total) * 100 : 0;
+    const topAcc = val.attempted > 0 ? Math.round((val.correct / val.attempted) * 100) : 0;
     skillScoreInserts.push({
       attemptId,
       subjectId: val.subjectId,
       topicId: topId,
-      score: val.earned,
+      score: Math.max(0, val.earned),
       total: val.total,
-      accuracy: Math.round(topAcc),
+      accuracy: Math.max(0, Math.min(100, topAcc)),
     });
   }
 
@@ -234,10 +342,13 @@ export async function gradeAttempt(attemptId: string, userId: string) {
   return {
     success: true,
     attemptId,
+    rawScore,
     score: normalizedScore,
     accuracy,
     timeTaken,
     correctCount,
+    incorrectCount: totalAnsweredCount - correctCount,
+    unansweredCount: testQuestionRows.length - totalAnsweredCount,
     totalQuestions: testQuestionRows.length,
   };
 }

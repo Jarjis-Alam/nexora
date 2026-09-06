@@ -22,8 +22,8 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
     name: initialProfile.name,
     college: initialProfile.college || "",
     branch: initialProfile.branch || "",
-    graduationYear: initialProfile.graduationYear || 2025,
-    preferredLanguage: initialProfile.preferredLanguage || "C++",
+    graduationYear: initialProfile.graduationYear || "",
+    preferredLanguage: initialProfile.preferredLanguage || "",
   });
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -81,62 +81,67 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
             </div>
           )}
           <div>
-            <label className="text-text-muted uppercase block mb-1">Full Name</label>
+            <label htmlFor="profile-name" className="mb-1 block uppercase text-text-muted">Full Name</label>
             <input
+              id="profile-name"
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full bg-base border border-border rounded px-3 py-2 text-text-primary focus:border-primary focus:outline-none"
+              className="w-full rounded border border-border bg-base px-3 py-2 text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
 
           <div>
-            <label className="text-text-muted uppercase block mb-1">College</label>
+            <label htmlFor="profile-college" className="mb-1 block uppercase text-text-muted">College</label>
             <input
+              id="profile-college"
               type="text"
               value={formData.college}
               onChange={(e) => setFormData({ ...formData, college: e.target.value })}
-              className="w-full bg-base border border-border rounded px-3 py-2 text-text-primary focus:border-primary focus:outline-none"
+              className="w-full rounded border border-border bg-base px-3 py-2 text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
 
           <div>
-            <label className="text-text-muted uppercase block mb-1">Branch</label>
+            <label htmlFor="profile-branch" className="mb-1 block uppercase text-text-muted">Branch</label>
             <input
+              id="profile-branch"
               type="text"
               value={formData.branch}
               onChange={(e) => setFormData({ ...formData, branch: e.target.value })}
-              className="w-full bg-base border border-border rounded px-3 py-2 text-text-primary focus:border-primary focus:outline-none"
+              className="w-full rounded border border-border bg-base px-3 py-2 text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
 
           <div>
-            <label className="text-text-muted uppercase block mb-1">Grad Year</label>
+            <label htmlFor="profile-grad-year" className="mb-1 block uppercase text-text-muted">Grad Year</label>
             <input
               type="number"
               value={formData.graduationYear}
               onChange={(e) =>
                 setFormData({
                   ...formData,
-                  graduationYear: Number(e.target.value),
+                  graduationYear: e.target.value,
                 })
               }
-              className="w-full bg-base border border-border rounded px-3 py-2 text-text-primary focus:border-primary focus:outline-none"
+              className="w-full rounded border border-border bg-base px-3 py-2 text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             />
           </div>
 
           <div>
-            <label className="text-text-muted uppercase block mb-1">
+            <label htmlFor="profile-language" className="mb-1 block uppercase text-text-muted">
               Preferred Language
             </label>
             <select
+              id="profile-language"
               value={formData.preferredLanguage}
               onChange={(e) =>
                 setFormData({ ...formData, preferredLanguage: e.target.value })
               }
-              className="w-full bg-base border border-border rounded px-3 py-2 text-text-primary focus:border-primary focus:outline-none"
+              className="w-full rounded border border-border bg-base px-3 py-2 text-text-primary outline-none focus:border-primary focus:ring-2 focus:ring-primary/30"
             >
+              <option value="">Not set</option>
               <option value="C++">C++</option>
               <option value="Java">Java</option>
               <option value="Python">Python</option>
@@ -147,7 +152,7 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-text-inverse font-semibold text-body-sm py-2 rounded hover:bg-primary-text transition-colors mt-3 cursor-pointer"
+            className="mt-3 w-full rounded bg-primary py-2 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60 disabled:opacity-60"
           >
             {loading ? "Saving..." : "Save Configuration"}
           </button>
@@ -161,15 +166,15 @@ export function ProfileEditor({ initialProfile }: ProfileEditorProps) {
 
           <div className="p-2.5 rounded bg-base border border-border">
             <span className="text-text-muted uppercase block text-[10px]">College</span>
-            <span className="text-text-primary">
-              {initialProfile.college || "NIT Silchar"}
+            <span className={initialProfile.college ? "text-text-primary" : "text-text-muted"}>
+              {initialProfile.college || "Not set"}
             </span>
           </div>
 
           <div className="p-2.5 rounded bg-base border border-border">
             <span className="text-text-muted uppercase block text-[10px]">Branch</span>
             <span className="text-text-primary">
-              {initialProfile.branch || "Computer Science"}
+              {initialProfile.branch || "Not set"}
             </span>
           </div>
         </div>

@@ -121,10 +121,10 @@ export default function LoginPage() {
         {/* Logo */}
         <div className="text-center mb-10">
           <h1 className="text-headline-lg text-text-primary font-bold">
-            Placement OS
+            Nexora
           </h1>
-          <p className="text-label-xs text-text-muted mt-2 uppercase tracking-wider font-mono">
-            Expert-Modular Prep
+          <p className="text-label-xs text-text-muted mt-2 tracking-wider font-mono">
+            Your Operating System for Placements
           </p>
         </div>
 

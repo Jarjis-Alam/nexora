@@ -17,13 +17,18 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
   const readinessVal = data.readiness.score ?? 0;
   const readinessOffset =
     readinessCirc - (readinessVal / 100) * readinessCirc;
+  const maxScore = Math.max(
+    10,
+    Math.ceil(Math.max(...data.performanceOverTime.map((point) => point.score), 0) / 10) * 10
+  );
+  const hasTrend = data.performanceOverTime.length > 1;
 
   return (
     <div className="space-y-8">
       {/* Row 1: Readiness + Performance Over Time */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Placement Readiness Breakdown (Span 4) */}
-        <div className="lg:col-span-4 bg-surface border border-border rounded-xl p-6 flex flex-col justify-between">
+        <div className="lg:col-span-4 flex flex-col justify-between rounded-xl border border-primary/20 bg-surface p-5 sm:p-6">
           <div>
             <h3 className="text-title-md font-semibold text-text-primary mb-6 flex items-center justify-between">
               Placement Readiness
@@ -33,7 +38,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
             </h3>
 
             {/* Circular Radial Gauge */}
-            <div className="flex justify-center mb-6 relative">
+            <div className="relative mb-6 flex justify-center">
               <svg className="w-36 h-36" viewBox="0 0 100 100">
                 <circle
                   className="text-surface-high stroke-current"
@@ -68,7 +73,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
 
           {/* Breakdown Bars */}
           {data.readiness.breakdown && (
-            <div className="space-y-3 pt-4 border-t border-border font-mono text-label-xs">
+            <div className="space-y-3 border-t border-border pt-4 font-mono text-label-xs">
               <div>
                 <div className="flex justify-between mb-1">
                   <span className="text-text-muted">Aptitude</span>
@@ -133,18 +138,19 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
         </div>
 
         {/* Performance Over Time (Span 8) */}
-        <div className="lg:col-span-8 bg-surface border border-border rounded-xl p-6 flex flex-col justify-between">
-          <div className="flex justify-between items-center mb-6">
+        <div className="lg:col-span-8 flex flex-col justify-between rounded-xl border border-border bg-surface p-5 sm:p-6">
+          <div className="mb-5 flex items-center justify-between gap-3">
             <h3 className="text-title-md font-semibold text-text-primary">
               Performance Over Time
             </h3>
-            <span className="text-label-xs font-mono text-text-muted">
-              HISTORICAL ATTEMPTS
+            <span className="text-right text-label-xs font-mono text-text-muted">
+              {hasTrend ? "HISTORICAL ATTEMPTS" : "LIMITED HISTORY"}
             </span>
           </div>
 
-          <div className="h-64 w-full">
+          <div className="h-64 w-full" aria-label="Historical score performance chart">
             {data.performanceOverTime.length >= 1 ? (
+              <div className="h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
                   data={data.performanceOverTime}
@@ -166,7 +172,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                   <YAxis
                     stroke="#8c909f"
                     fontSize={11}
-                    domain={[0, 100]}
+                    domain={[0, maxScore]}
                     tickLine={false}
                   />
                   <Tooltip
@@ -191,9 +197,15 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              {!hasTrend && (
+                <p className="mt-1 text-center text-label-xs font-mono text-text-muted">
+                  Complete another test to establish a performance trend.
+                </p>
+              )}
+              </div>
             ) : (
-              <div className="h-full flex items-center justify-center text-text-muted text-body-sm font-mono border border-dashed border-border rounded-lg">
-                Complete assessments to generate performance trend line.
+              <div className="flex h-full items-center justify-center rounded-lg border border-dashed border-border px-4 text-center text-body-sm font-mono text-text-muted">
+                No attempts in this period.
               </div>
             )}
           </div>
@@ -203,7 +215,7 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
       {/* Row 2: Difficulty Performance & Weakest/Strongest Topics */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Difficulty Breakdown (Span 4) */}
-        <div className="lg:col-span-4 bg-surface border border-border rounded-xl p-6 space-y-6">
+        <div className="lg:col-span-4 space-y-6 rounded-xl border border-border bg-surface p-5 sm:p-6">
           <h3 className="text-title-md font-semibold text-text-primary">
             Difficulty Performance
           </h3>
@@ -215,8 +227,10 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                   <span className="text-text-primary capitalize">
                     {diff.difficulty}
                   </span>
-                  <span className="text-text-muted">
-                    {diff.correct}/{diff.attempted} ({diff.accuracy}%)
+                  <span className="text-right text-text-muted">
+                    {diff.attempted > 0
+                      ? `${diff.correct}/${diff.attempted} (${diff.accuracy}%)`
+                      : "Not attempted"}
                   </span>
                 </div>
                 <div className="h-2 w-full bg-surface-high rounded-full overflow-hidden">
@@ -237,12 +251,12 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
         </div>
 
         {/* Strongest & Weakest Topics (Span 8) */}
-        <div className="lg:col-span-8 bg-surface border border-border rounded-xl p-6">
-          <h3 className="text-title-md font-semibold text-text-primary mb-6">
+        <div className="lg:col-span-8 rounded-xl border border-border bg-surface p-5 sm:p-6">
+          <h3 className="mb-5 text-title-md font-semibold text-text-primary">
             Topic Strength Matrix
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             {/* Strongest */}
             <div>
               <span className="text-label-xs text-secondary uppercase font-mono font-bold block mb-3">
@@ -265,8 +279,8 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-label-xs text-text-muted font-mono py-2">
-                  No strong topic classifications yet.
+                <p className="py-2 text-label-xs font-mono leading-relaxed text-text-muted">
+                  No strong topic classifications yet. Complete more questions to establish reliable topic-level performance.
                 </p>
               )}
             </div>
@@ -293,8 +307,8 @@ export function AnalyticsCharts({ data }: { data: AnalyticsData }) {
                   ))}
                 </div>
               ) : (
-                <p className="text-label-xs text-text-muted font-mono py-2">
-                  No weak topic anomalies detected.
+                <p className="py-2 text-label-xs font-mono leading-relaxed text-text-muted">
+                  No focus areas detected by the current topic threshold.
                 </p>
               )}
             </div>

@@ -8,6 +8,83 @@
       "when": 1788538875360,
       "tag": "0000_violet_kid_colt",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1788540000000,
+      "tag": "0001_phase_6c_test_sections",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1788550000000,
+      "tag": "0002_phase_7a_negative_marking",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1788560000000,
+      "tag": "0003_phase_7b_question_randomization",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1788570000000,
+      "tag": "0004_phase_7c_option_randomization",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1788580000000,
+      "tag": "0005_phase_7c1_question_snapshot_hardening",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788590000000,
+      "tag": "0006_phase_7d_attempt_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1788600000000,
+      "tag": "0007_phase_7e_test_instructions",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1788610000000,
+      "tag": "0008_phase_7f_question_pools",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1788620000000,
+      "tag": "0009_phase_8_test_lifecycle_scheduling",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1788630000000,
+      "tag": "0010_phase_9_admin_analytics_indexes",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1788640000000,
+      "tag": "0011_phase_11a_company_role_intelligence",
+      "breakpoints": true
     }
   ]
 }

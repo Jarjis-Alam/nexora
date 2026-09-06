@@ -32,9 +32,9 @@ export function DetailedReviewTable({
   };
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="overflow-x-auto rounded-lg border border-border">
       {/* Table Header */}
-      <div className="grid grid-cols-12 gap-4 px-5 py-3 bg-surface-high border-b border-border text-label-xs font-mono text-text-muted uppercase">
+      <div className="grid min-w-[620px] grid-cols-12 gap-4 border-b border-border bg-surface-high px-5 py-3 text-label-xs font-mono uppercase text-text-muted">
         <div className="col-span-1">Q#</div>
         <div className="col-span-6 sm:col-span-7">Subject / Topic</div>
         <div className="col-span-3 sm:col-span-2">Status</div>
@@ -42,7 +42,7 @@ export function DetailedReviewTable({
       </div>
 
       {/* Rows */}
-      <div className="divide-y divide-border">
+      <div className="min-w-[620px] divide-y divide-border">
         {questions.map((q, idx) => {
           const isAnswered =
             q.selectedAnswer !== null && q.selectedAnswer !== undefined;
@@ -77,7 +77,7 @@ export function DetailedReviewTable({
             <div key={q.questionId} className="bg-surface hover:bg-surface-high/30 transition-colors">
               <div
                 onClick={() => toggleExpand(q.questionId)}
-                className="grid grid-cols-12 gap-4 px-5 py-3.5 items-center cursor-pointer text-body-sm"
+                className="grid cursor-pointer grid-cols-12 items-center gap-4 px-5 py-4 text-body-sm transition-colors focus-within:bg-surface-high/30 hover:bg-surface-high/30"
               >
                 <div className="col-span-1 font-mono text-label-xs text-text-muted">
                   {String(idx + 1).padStart(2, "0")}
@@ -95,7 +95,12 @@ export function DetailedReviewTable({
                 <div className="col-span-3 sm:col-span-2">{statusBadge}</div>
 
                 <div className="col-span-2 text-right">
-                  <button className="text-label-xs font-mono text-primary-text hover:text-primary transition-colors inline-flex items-center gap-1">
+                  <button
+                    type="button"
+                    aria-expanded={isExpanded}
+                    aria-label={`${isExpanded ? "Hide" : "View"} question ${idx + 1} details`}
+                    className="inline-flex items-center gap-1 rounded px-2 py-1 text-label-xs font-mono text-primary-text transition-colors hover:bg-primary/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/60"
+                  >
                     <span>{isExpanded ? "Hide" : "View"}</span>
                     <span className="material-symbols-outlined text-[16px]">
                       {isExpanded ? "expand_less" : "expand_more"}
@@ -124,18 +129,48 @@ export function DetailedReviewTable({
                       Options & Comparison
                     </span>
                     {Array.isArray(q.options) &&
-                      q.options.map((opt: string, optIdx: number) => {
-                        const isStudentChoice =
-                          q.questionType === "single_choice"
-                            ? String(q.selectedAnswer).trim() === String(opt).trim()
-                            : Array.isArray(q.selectedAnswer) &&
-                              q.selectedAnswer.includes(opt);
+                      q.options.map((opt: any, optIdx: number) => {
+                        const optId =
+                          typeof opt === "object" && opt !== null && "id" in opt
+                            ? opt.id
+                            : null;
+                        const optText =
+                          typeof opt === "object" && opt !== null && "text" in opt
+                            ? opt.text
+                            : String(opt);
 
-                        const isCorrectChoice =
-                          q.questionType === "single_choice"
-                            ? String(q.correctAnswer).trim() === String(opt).trim()
-                            : Array.isArray(q.correctAnswer) &&
-                              q.correctAnswer.includes(opt);
+                        // Student choice check
+                        let isStudentChoice = false;
+                        if (q.questionType === "single_choice") {
+                          if (optId && String(q.selectedAnswer).trim() === optId) {
+                            isStudentChoice = true;
+                          } else if (String(q.selectedAnswer).trim() === optText.trim()) {
+                            isStudentChoice = true;
+                          }
+                        } else if (Array.isArray(q.selectedAnswer)) {
+                          if (optId && q.selectedAnswer.includes(optId)) {
+                            isStudentChoice = true;
+                          } else if (q.selectedAnswer.map(String).includes(optText)) {
+                            isStudentChoice = true;
+                          }
+                        }
+
+                        // Correct choice check
+                        let isCorrectChoice = false;
+                        if (q.questionType === "single_choice") {
+                          const correctStr = String(q.correctAnswer).trim();
+                          if (optId && correctStr === optId) {
+                            isCorrectChoice = true;
+                          } else if (correctStr === optText.trim()) {
+                            isCorrectChoice = true;
+                          }
+                        } else if (Array.isArray(q.correctAnswer)) {
+                          if (optId && q.correctAnswer.includes(optId)) {
+                            isCorrectChoice = true;
+                          } else if (q.correctAnswer.map(String).includes(optText)) {
+                            isCorrectChoice = true;
+                          }
+                        }
 
                         let borderClass = "border-border bg-surface";
                         if (isCorrectChoice) {
@@ -153,7 +188,7 @@ export function DetailedReviewTable({
                               <span className="font-mono text-label-xs font-bold text-text-muted mt-0.5">
                                 {String.fromCharCode(65 + optIdx)}.
                               </span>
-                              <span>{opt}</span>
+                              <span>{optText}</span>
                             </div>
 
                             <div className="flex items-center gap-2 font-mono text-label-xs flex-shrink-0">

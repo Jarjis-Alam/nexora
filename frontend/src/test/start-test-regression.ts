@@ -41,7 +41,8 @@ async function runRegressionTest() {
 
   let studentId = "";
   let hackerId = "";
-  const baselineTestId = "0e989fa7-5fb9-4d55-b728-290dc9446e9a";
+  const baselineRow = (await db.select().from(tests).where(eq(tests.type, "baseline")).limit(1))[0];
+  const baselineTestId = baselineRow?.id || "";
   let attemptId = "";
 
   try {

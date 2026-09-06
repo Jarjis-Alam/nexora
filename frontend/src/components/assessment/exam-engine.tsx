@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   saveAnswerAction,
@@ -20,6 +20,10 @@ interface ExamEngineProps {
     totalDurationSeconds: number;
     remainingSeconds: number;
     currentQuestionIndex: number;
+    markingPolicy?: {
+      negativeMarkingEnabled: boolean;
+      negativeMarkRate: number;
+    };
     questions: {
       id: string;
       question: string;
@@ -32,6 +36,9 @@ interface ExamEngineProps {
       subjectCode: string;
       topicName: string;
       questionOrder: number;
+      sectionId?: string;
+      sectionTitle?: string;
+      sectionOrder?: number;
     }[];
     answers: Record<
       string,
@@ -68,6 +75,35 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
 
   const currentQ = questions[currentIndex];
   const totalQuestions = questions.length;
+
+  const sectionGroups = useMemo(() => {
+    const groups: {
+      sectionId: string;
+      sectionTitle: string;
+      sectionOrder: number;
+      items: { q: (typeof questions)[0]; index: number }[];
+    }[] = [];
+
+    questions.forEach((q, index) => {
+      const sId = q.sectionId || "default-sec";
+      const sTitle = q.sectionTitle || "General";
+      const sOrder = q.sectionOrder ?? 1;
+
+      let group = groups.find((g) => g.sectionId === sId);
+      if (!group) {
+        group = {
+          sectionId: sId,
+          sectionTitle: sTitle,
+          sectionOrder: sOrder,
+          items: [],
+        };
+        groups.push(group);
+      }
+      group.items.push({ q, index });
+    });
+
+    return groups.sort((a, b) => a.sectionOrder - b.sectionOrder);
+  }, [questions]);
 
   // Auto-submit / Final submit helper with double-submission guard
   const handleFinalSubmit = useCallback(async () => {
@@ -232,7 +268,12 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
 
         if (optIndex >= 0 && optIndex < currentQ.options.length) {
           e.preventDefault();
-          handleSelectOption(currentQ.options[optIndex]);
+          const target = currentQ.options[optIndex];
+          const targetId =
+            typeof target === "object" && target !== null && "id" in target
+              ? (target as any).id
+              : String(target);
+          handleSelectOption(targetId);
         }
       }
     };
@@ -268,6 +309,12 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
   });
 
   const unansweredCount = totalQuestions - answeredCount;
+  const timerState =
+    remainingSeconds <= 300
+      ? "critical"
+      : remainingSeconds <= 900
+      ? "warning"
+      : "normal";
 
   // Render question status indicator for navigator
   const getQuestionStatus = (qId: string, idx: number) => {
@@ -295,110 +342,145 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
   };
 
   return (
-    <div className="min-h-screen bg-base flex flex-col text-text-primary">
+    <div className="fixed inset-0 z-50 flex h-dvh min-h-0 flex-col overflow-hidden bg-base text-text-primary">
       {/* Top Header */}
-      <header className="h-16 border-b border-border bg-surface px-6 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center space-x-4">
-          <div className="w-8 h-8 rounded-full bg-surface-high flex items-center justify-center border border-border">
+      <header className="flex min-h-16 shrink-0 items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-6">
+        <div className="flex min-w-0 items-center gap-3 sm:gap-4">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface-high">
             <span className="material-symbols-outlined text-primary-text text-[18px]">
               terminal
             </span>
           </div>
-          <div>
-            <h1 className="text-body-sm font-bold text-text-primary truncate max-w-xs sm:max-w-md">
-              Placement OS • {testTitle}
+          <div className="min-w-0">
+            <p className="text-label-xs font-mono uppercase tracking-wider text-text-muted">Nexora • Active Exam</p>
+            <h1 className="max-w-[11rem] truncate text-body-sm font-bold text-text-primary sm:max-w-md">
+              Nexora • {testTitle}
             </h1>
           </div>
         </div>
 
         {/* Center: Question Counter */}
-        <div className="hidden sm:flex items-center gap-1 font-mono text-body-sm text-text-secondary">
-          <span className="text-label-xs text-text-muted uppercase">QUESTION</span>
-          <span className="text-text-primary font-bold">{currentIndex + 1}</span>
+        <div className="flex shrink-0 items-center gap-1 rounded-lg border border-border bg-surface-high px-2.5 py-1.5 font-mono text-body-sm text-text-secondary sm:px-3">
+          <span className="text-label-xs uppercase text-text-muted">Q</span>
+          <span className="font-bold text-text-primary">{currentIndex + 1}</span>
           <span className="text-text-muted">/ {totalQuestions}</span>
         </div>
 
         {/* Right: Timer & Finish Exam button */}
-        <div className="flex items-center space-x-4">
-          <div className="bg-surface-high border border-border px-3 py-1.5 rounded flex items-center gap-2 font-mono text-body-sm text-primary-text font-bold">
-            <span className="material-symbols-outlined text-[18px]">timer</span>
+        <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+          <div
+            className={`flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 font-mono text-body-sm font-bold transition-colors sm:gap-2 sm:px-3 ${
+              timerState === "critical"
+                ? "border-error/50 bg-error/10 text-error"
+                : timerState === "warning"
+                ? "border-tertiary/50 bg-tertiary/10 text-tertiary"
+                : "border-primary/30 bg-primary/10 text-primary-text"
+            }`}
+            aria-label={`Time remaining ${formatTimerDisplay(remainingSeconds)}`}
+            aria-live="polite"
+          >
+            <span className="material-symbols-outlined text-[17px]">timer</span>
             <span>{formatTimerDisplay(remainingSeconds)}</span>
           </div>
 
           <button
             onClick={() => setShowSubmitModal(true)}
-            className="bg-primary text-text-inverse font-semibold text-body-sm px-4 py-2 rounded hover:bg-primary-text transition-colors cursor-pointer"
+            className="inline-flex h-10 items-center rounded-lg bg-primary px-2.5 text-[11px] font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60 sm:px-3 sm:text-body-sm"
           >
-            Finish Exam
+            <span className="sm:hidden">Finish</span>
+            <span className="hidden sm:inline">Finish Exam</span>
           </button>
         </div>
       </header>
 
       {/* Main Examination Layout */}
-      <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row">
         {/* Left: Question Navigator */}
-        <aside className="w-full md:w-72 bg-surface border-r border-border p-5 flex flex-col overflow-y-auto max-h-[220px] md:max-h-none flex-shrink-0">
-          <h3 className="text-title-md font-semibold text-text-primary mb-3">
-            Question Navigator
-          </h3>
+        <aside className="max-h-[180px] w-full shrink-0 overflow-y-auto border-b border-border bg-surface p-4 md:max-h-none md:w-64 md:border-b-0 md:border-r md:p-5 lg:w-72">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <h3 className="text-title-md font-semibold text-text-primary">Question Navigator</h3>
+            <span className="text-label-xs font-mono uppercase text-text-muted">{totalQuestions} total</span>
+          </div>
 
           {/* Legend */}
-          <div className="grid grid-cols-2 gap-2 text-label-xs text-text-muted font-mono mb-4 pb-4 border-b border-border">
+          <div className="mb-4 grid grid-cols-2 gap-2 border-b border-border pb-4 font-mono text-label-xs text-text-muted">
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded bg-primary" />
+              <span className="h-2.5 w-2.5 shrink-0 rounded bg-primary" />
               <span>Answered ({answeredCount})</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded bg-surface-high border border-border" />
+              <span className="h-2.5 w-2.5 shrink-0 rounded border border-border bg-surface-high" />
               <span>Unanswered ({unansweredCount})</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded border border-tertiary" />
+              <span className="h-2.5 w-2.5 shrink-0 rounded border border-tertiary" />
               <span>Review ({markedReviewCount})</span>
             </div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded border-2 border-primary" />
+              <span className="h-2.5 w-2.5 shrink-0 rounded border-2 border-primary" />
               <span>Current</span>
             </div>
           </div>
 
-          {/* Grid of Question numbers */}
-          <div className="grid grid-cols-5 gap-2 font-mono text-label-xs" role="navigation" aria-label="Question list">
-            {questions.map((q, idx) => (
-              <button
-                key={q.id}
-                onClick={() => handleQuestionChange(idx)}
-                aria-label={`Go to question ${idx + 1}`}
-                aria-current={idx === currentIndex ? "true" : undefined}
-                className={`h-9 rounded flex items-center justify-center transition-all cursor-pointer ${getQuestionStatus(
-                  q.id,
-                  idx
-                )}`}
-              >
-                {idx + 1}
-              </button>
+          {/* Grouped Question numbers by section */}
+          <div className="space-y-4" role="navigation" aria-label="Question list">
+            {sectionGroups.map((group) => (
+              <div key={group.sectionId} className="space-y-1.5">
+                <div className="flex items-center justify-between text-label-xs font-mono uppercase text-primary-text font-bold">
+                  <span className="truncate">{group.sectionTitle}</span>
+                  <span className="text-text-muted font-normal text-[11px]">
+                    {group.items.length} Qs
+                  </span>
+                </div>
+                <div className="grid grid-cols-6 gap-2 font-mono text-label-xs sm:grid-cols-8 md:grid-cols-5">
+                  {group.items.map(({ q, index }) => (
+                    <button
+                      key={q.id}
+                      onClick={() => handleQuestionChange(index)}
+                      aria-label={`Go to question ${index + 1}`}
+                      aria-current={index === currentIndex ? "true" : undefined}
+                      className={`h-9 rounded-lg flex items-center justify-center transition-all cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/70 ${getQuestionStatus(
+                        q.id,
+                        index
+                      )}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </aside>
 
         {/* Right: Question & Option Canvas */}
-        <main className="flex-1 overflow-y-auto p-6 md:p-10 flex flex-col justify-between max-w-4xl mx-auto w-full">
+        <main className="flex min-h-0 w-full max-w-5xl flex-1 flex-col justify-between overflow-y-auto px-4 py-6 sm:px-6 md:mx-auto md:p-10">
           {currentQ ? (
-            <div className="space-y-8">
+            <div className="mx-auto w-full max-w-3xl space-y-7 md:space-y-8">
               {/* Question metadata bar */}
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+              <div className="flex flex-col items-start justify-between gap-3 border-b border-border/70 pb-5 sm:flex-row sm:items-center">
+                <div className="flex flex-wrap items-center gap-2.5">
                   <span className="text-label-xs text-text-muted uppercase font-mono tracking-wider">
                     {currentQ.questionType === "single_choice"
                       ? "MULTIPLE CHOICE — SINGLE ANSWER"
                       : "MULTIPLE CHOICE — SELECT ALL THAT APPLY"}
                   </span>
-                  <span className="text-label-xs px-2 py-0.5 rounded bg-surface-high text-primary-text border border-border font-mono uppercase">
+                  {currentQ.sectionTitle && (
+                    <span className="rounded border border-primary/30 bg-primary/10 px-2 py-1 text-label-xs font-mono uppercase text-primary-text font-semibold">
+                      {currentQ.sectionTitle}
+                    </span>
+                  )}
+                  <span className="rounded border border-border bg-surface-high px-2 py-1 text-label-xs font-mono uppercase text-primary-text">
                     {currentQ.subjectCode} • {currentQ.topicName}
                   </span>
+                  {initialState.markingPolicy?.negativeMarkingEnabled && (
+                    <span className="rounded border border-error/30 bg-error/10 px-2 py-1 text-label-xs font-mono text-error">
+                      +{currentQ.marks} / -{(currentQ.marks * (initialState.markingPolicy.negativeMarkRate || 0)).toFixed(2)}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center gap-1.5 text-label-xs text-secondary font-mono bg-secondary/10 px-2.5 py-1 rounded border border-secondary/20">
+                <div className="flex items-center gap-1.5 rounded border border-secondary/20 bg-secondary/10 px-2.5 py-1 text-label-xs font-mono text-secondary">
                   <span className="material-symbols-outlined text-[14px]">cloud_done</span>
                   <span>{isSaving ? "Saving..." : "Auto-saved"}</span>
                 </div>
@@ -409,43 +491,52 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                 <h2 className="text-2xl sm:text-3xl font-semibold text-text-primary leading-snug">
                   Question {currentIndex + 1}
                 </h2>
-                <div className="mt-4 text-body-md text-text-primary whitespace-pre-wrap leading-relaxed">
+                <div className="mt-5 max-w-3xl whitespace-pre-wrap text-body-md leading-relaxed text-text-primary">
                   {currentQ.question}
                 </div>
               </div>
 
               {/* Options */}
               <div
-                className="space-y-3 pt-2"
+                className="space-y-3 pt-1"
                 role={currentQ.questionType === "single_choice" ? "radiogroup" : "group"}
                 aria-label={`Options for Question ${currentIndex + 1}`}
               >
                 {Array.isArray(currentQ.options) &&
-                  currentQ.options.map((opt: string, optIdx: number) => {
+                  currentQ.options.map((opt: any, optIdx: number) => {
+                    const optId =
+                      typeof opt === "object" && opt !== null && "id" in opt
+                        ? opt.id
+                        : String(opt);
+                    const optText =
+                      typeof opt === "object" && opt !== null && "text" in opt
+                        ? opt.text
+                        : String(opt);
+
                     const currentSelected = answers[currentQ.id]?.selectedAnswer;
                     const isSelected =
                       currentQ.questionType === "single_choice"
-                        ? currentSelected === opt
+                        ? currentSelected === optId
                         : Array.isArray(currentSelected) &&
-                          currentSelected.includes(opt);
+                          currentSelected.includes(optId);
 
                     const optionLetter = String.fromCharCode(65 + optIdx);
 
                     return (
                       <button
                         key={optIdx}
-                        onClick={() => handleSelectOption(opt)}
+                        onClick={() => handleSelectOption(optId)}
                         role={currentQ.questionType === "single_choice" ? "radio" : "checkbox"}
                         aria-checked={isSelected}
-                        aria-label={`Option ${optionLetter}: ${opt}`}
-                        className={`w-full text-left p-4 rounded-lg border transition-all flex items-start gap-4 cursor-pointer ${
+                        aria-label={`Option ${optionLetter}: ${optText}`}
+                        className={`w-full text-left p-4 rounded-xl border transition-all flex items-start gap-4 cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/70 ${
                           isSelected
                             ? "bg-primary/10 border-primary text-text-primary shadow-sm"
                             : "bg-surface border-border text-text-secondary hover:border-border-variant hover:text-text-primary"
                         }`}
                       >
                         <div
-                          className={`w-6 h-6 rounded-full flex items-center justify-center font-mono text-label-xs font-bold flex-shrink-0 mt-0.5 ${
+                          className={`w-7 h-7 rounded-lg flex items-center justify-center font-mono text-label-xs font-bold flex-shrink-0 mt-0.5 ${
                             isSelected
                               ? "bg-primary text-text-inverse"
                               : "bg-surface-high border border-border text-text-muted"
@@ -454,7 +545,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                           {optionLetter}
                         </div>
                         <span className="text-body-sm leading-relaxed flex-1">
-                          {opt}
+                          {optText}
                         </span>
                         <span className="text-[10px] font-mono text-text-muted/60 uppercase hidden sm:inline-block">
                           [{optionLetter}]
@@ -471,12 +562,12 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
           )}
 
           {/* Bottom Action Controls */}
-          <div className="pt-10 mt-10 border-t border-border flex items-center justify-between">
+          <div className="sticky bottom-0 z-10 mt-8 flex items-center justify-between gap-2 border-t border-border bg-base/95 pt-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-sm sm:gap-3 md:mt-10 md:pt-5">
             <button
               onClick={() => handleQuestionChange(currentIndex - 1)}
               disabled={currentIndex === 0}
               aria-label="Previous question"
-              className="bg-surface border border-border text-text-primary font-medium text-body-sm px-5 py-2.5 rounded hover:bg-surface-high transition-colors disabled:opacity-30 disabled:cursor-not-allowed flex items-center gap-2"
+              className="flex h-11 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-body-sm font-medium text-text-primary transition-colors hover:bg-surface-high focus:outline-none focus:ring-2 focus:ring-primary/70 disabled:cursor-not-allowed disabled:opacity-30 sm:gap-2 sm:px-5"
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
               Previous
@@ -485,7 +576,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
             <button
               onClick={handleToggleReview}
               aria-label={answers[currentQ?.id]?.markedForReview ? "Unmark review" : "Mark for review"}
-              className={`font-medium text-body-sm px-4 py-2.5 rounded border transition-colors flex items-center gap-2 cursor-pointer ${
+              className={`flex h-11 items-center gap-1.5 rounded-lg border px-3 text-body-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-primary/70 sm:gap-2 sm:px-4 ${
                 answers[currentQ?.id]?.markedForReview
                   ? "bg-tertiary/20 text-tertiary border-tertiary"
                   : "bg-surface border-border text-text-secondary hover:text-text-primary hover:bg-surface-high"
@@ -506,7 +597,7 @@ export function ExamEngine({ initialState }: ExamEngineProps) {
                 }
               }}
               aria-label={currentIndex === totalQuestions - 1 ? "Review and submit assessment" : "Next question"}
-              className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded hover:bg-primary-text transition-colors flex items-center gap-2 cursor-pointer"
+              className="flex h-11 items-center gap-1.5 rounded-lg bg-primary px-4 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/70 sm:gap-2 sm:px-6"
             >
               {currentIndex === totalQuestions - 1 ? (
                 <>

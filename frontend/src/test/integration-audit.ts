@@ -3,6 +3,7 @@ import {
   users,
   profiles,
   tests,
+  testSections,
   testQuestions,
   questions,
   subjects,
@@ -179,7 +180,8 @@ async function runIntegrationAudit() {
     assert(examState.questions.length === 50, "Exam engine loaded all 50 questions");
     const q1 = examState.questions[0];
 
-    const selectedAns = Array.isArray(q1.options) ? q1.options[0] : "Option A";
+    const opt0 = Array.isArray(q1.options) ? q1.options[0] : "Option A";
+    const selectedAns = typeof opt0 === "object" && opt0 !== null && "id" in opt0 ? (opt0 as any).id : opt0;
     const saveResult = await saveAnswer(attemptAId, studentAId, q1.id, selectedAns, 15);
     assert(saveResult.success === true, "saveAnswer returned success");
 
@@ -341,8 +343,19 @@ async function runIntegrationAudit() {
       .returning();
     assert(!!newAdminTest.id, "Admin created new assessment in tests table");
 
+    const [newAdminSection] = await db
+      .insert(testSections)
+      .values({
+        testId: newAdminTest.id,
+        title: "General",
+        sectionOrder: 1,
+      })
+      .returning();
+    assert(!!newAdminSection.id, "Admin test section created");
+
     await db.insert(testQuestions).values({
       testId: newAdminTest.id,
+      sectionId: newAdminSection.id,
       questionId: newAdminQ.id,
       questionOrder: 1,
     });

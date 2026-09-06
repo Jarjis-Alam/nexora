@@ -19,8 +19,10 @@ export default async function AdminQuestionsPage() {
     .select({
       id: questions.id,
       question: questions.question,
+      questionType: questions.questionType,
       difficulty: questions.difficulty,
       marks: questions.marks,
+      expectedTime: questions.expectedTime,
       subjectName: subjects.name,
       subjectCode: subjects.code,
       topicName: topics.name,
@@ -34,12 +36,15 @@ export default async function AdminQuestionsPage() {
   const allSubjects = await db.select({ id: subjects.id, name: subjects.name }).from(subjects);
 
   return (
-    <div className="space-y-8 pb-20">
+    <div className="space-y-8 pb-28 pr-28 lg:pr-0">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-headline-lg font-bold text-text-primary">
-            Question Bank
+            <span className="text-label-xs font-mono uppercase tracking-wider text-primary-text">Question Bank</span>
+            <span className="mt-2 block text-headline-lg font-bold text-text-primary">
+              Curriculum Repository
+            </span>
           </h1>
           <p className="text-body-md text-text-secondary mt-1">
             Author and manage technical assessments in the repository.
@@ -51,7 +56,7 @@ export default async function AdminQuestionsPage() {
           className="bg-primary text-text-inverse font-semibold text-body-sm px-5 py-2.5 rounded hover:bg-primary-text transition-colors inline-flex items-center gap-2 shadow-sm self-start sm:self-auto"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          Add Question
+            New Question
         </Link>
       </div>
 

@@ -7,6 +7,10 @@ export {};
 
 const BASE_URL = "http://localhost:3000";
 
+import { db } from "@/db";
+import { tests, testQuestions } from "@/db/schema";
+import { eq } from "drizzle-orm";
+
 class CookieJar {
   cookies: Record<string, string> = {};
 
@@ -61,7 +65,7 @@ async function runE2EHttpVerification() {
   const homeRes = await fetch(`${BASE_URL}/`);
   assert(homeRes.status === 200, "Landing page returns 200 OK");
   const homeHtml = await homeRes.text();
-  assert(homeHtml.includes("Placement OS"), "Landing page contains Placement OS branding");
+  assert(homeHtml.includes("Nexora"), "Landing page contains Nexora branding");
 
   // 2. Student Registration
   console.log("\nStep 2: Student Registration...");
@@ -182,6 +186,32 @@ async function runE2EHttpVerification() {
   });
   assert(studentAdminRes.status === 307 || studentAdminRes.status === 302, "Student is blocked from /admin/questions and redirected");
 
+  const studentDuplicateRes = await fetch(`${BASE_URL}/api/admin/tests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Cookie: studentJar.getHeader() },
+    body: JSON.stringify({ action: "duplicate", id: "00000000-0000-0000-0000-000000000000" }),
+  });
+  assert(studentDuplicateRes.status === 403, "Student cannot invoke test duplication");
+
+  const anonymousDuplicateRes = await fetch(`${BASE_URL}/api/admin/tests`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action: "duplicate", id: "00000000-0000-0000-0000-000000000000" }),
+    redirect: "manual",
+  });
+  assert(anonymousDuplicateRes.status === 403 || anonymousDuplicateRes.status === 307 || anonymousDuplicateRes.status === 302, "Anonymous user cannot invoke test duplication");
+
+  const studentPreviewRes = await fetch(`${BASE_URL}/admin/tests/preview`, {
+    headers: { Cookie: studentJar.getHeader() },
+    redirect: "manual",
+  });
+  assert(studentPreviewRes.status === 307 || studentPreviewRes.status === 302, "Student is blocked from admin test preview and redirected");
+
+  const anonymousPreviewRes = await fetch(`${BASE_URL}/admin/tests/preview`, {
+    redirect: "manual",
+  });
+  assert(anonymousPreviewRes.status === 307 || anonymousPreviewRes.status === 302, "Anonymous user is blocked from admin test preview and redirected");
+
   // Login as Admin
   const adminJar = new CookieJar();
   const adminCsrfRes = await fetch(`${BASE_URL}/api/auth/csrf`);
@@ -211,8 +241,44 @@ async function runE2EHttpVerification() {
   });
   assert(adminQuestionsRes.status === 200, "Admin can access Question Bank (/admin/questions)");
 
-  // 9. Admin Question Creation Validation
-  console.log("\nStep 9: Admin Question Creation Validation...");
+  const adminPreviewRes = await fetch(`${BASE_URL}/admin/tests/preview`, {
+    headers: { Cookie: adminJar.getHeader() },
+  });
+  assert(adminPreviewRes.status === 200, "Admin can access protected test preview route");
+  const adminPreviewHtml = await adminPreviewRes.text();
+  assert(adminPreviewHtml.includes("Preview is unavailable"), "Preview safely handles missing local builder state without server data");
+
+  // 9. Admin Test Duplication
+  console.log("\nStep 9: Admin Test Duplication...");
+  const sourceTest = (await db.select().from(tests).where(eq(tests.type, "baseline")).limit(1))[0];
+  const sourceLinks = sourceTest
+    ? await db.select().from(testQuestions).where(eq(testQuestions.testId, sourceTest.id)).orderBy(testQuestions.questionOrder)
+    : [];
+  const duplicateRes = await fetch(`${BASE_URL}/api/admin/tests`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Cookie: adminJar.getHeader(),
+    },
+    body: JSON.stringify({ action: "duplicate", id: sourceTest?.id }),
+  });
+  assert(duplicateRes.status === 200, "Admin can duplicate an existing test");
+  const duplicatePayload = await duplicateRes.json();
+  const duplicateId = duplicatePayload.test?.id as string | undefined;
+  assert(Boolean(duplicateId && duplicateId !== sourceTest?.id), "Duplicate receives a new test ID");
+  assert(duplicatePayload.test?.isPublished === false, "Published source becomes draft duplicate");
+  assert(duplicatePayload.questionCount === sourceLinks.length, "Duplicate preserves question count");
+  const duplicateLinks = duplicateId
+    ? await db.select().from(testQuestions).where(eq(testQuestions.testId, duplicateId)).orderBy(testQuestions.questionOrder)
+    : [];
+  assert(duplicateLinks.every((link, index) => link.questionId === sourceLinks[index]?.questionId && link.questionOrder === sourceLinks[index]?.questionOrder), "Duplicate preserves question references and ordering");
+  assert(sourceTest?.title !== duplicatePayload.test?.title || !sourceTest, "Duplicate uses a collision-safe title");
+  if (duplicateId) {
+    await db.delete(tests).where(eq(tests.id, duplicateId));
+  }
+
+  // 10. Admin Question Creation Validation
+  console.log("\nStep 10: Admin Question Creation Validation...");
   const invalidQRes = await fetch(`${BASE_URL}/api/admin/questions`, {
     method: "POST",
     headers: {
@@ -227,8 +293,8 @@ async function runE2EHttpVerification() {
   });
   assert(invalidQRes.status === 400, "Admin question creation rejects empty question with 400 Bad Request");
 
-  // 10. Admin Test Builder Validation
-  console.log("\nStep 10: Admin Test Builder Validation...");
+  // 11. Admin Test Builder Validation
+  console.log("\nStep 11: Admin Test Builder Validation...");
   const invalidTestRes = await fetch(`${BASE_URL}/api/admin/tests`, {
     method: "POST",
     headers: {

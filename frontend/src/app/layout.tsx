@@ -5,7 +5,7 @@ import GradientWaves from "@/components/ui/gradient-waves";
 import { DevButton } from "@/components/layout/dev-modal";
 
 export const metadata: Metadata = {
-  title: "Placement OS — Your Operating System for Placements",
+  title: "Nexora — Your Operating System for Placements",
   description:
     "Assess your skills, identify your weaknesses, practice smarter, and measure your placement readiness with high-precision metrics.",
 };
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en" className="dark scroll-smooth">
       <head>
         <link
           href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -42,12 +42,12 @@ export default function RootLayout({
             fogDepth={15}
             detail="medium"
             brightness={1.0}
-            opacity={0.85}
+            opacity={0.45}
             mouseInteraction={true}
             parallaxStrength={0.5}
           />
           {/* Subtle dark gradient overlay to ensure perfect contrast and text readability */}
-          <div className="absolute inset-0 bg-base/50 pointer-events-none" />
+          <div className="absolute inset-0 bg-base/75 pointer-events-none" />
         </div>
         <div className="relative z-10 min-h-screen">
           <AuthProvider>

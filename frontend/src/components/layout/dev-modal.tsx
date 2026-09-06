@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useSyncExternalStore } from "react";
+import { createPortal } from "react-dom";
 import { ProfileCard } from "@/components/ui/profile-card";
 
 interface DevModalProps {
@@ -8,7 +9,15 @@ interface DevModalProps {
   onClose: () => void;
 }
 
+const emptySubscribe = () => () => {};
+
 export function DevModal({ isOpen, onClose }: DevModalProps) {
+  const isMounted = useSyncExternalStore(
+    emptySubscribe,
+    () => true,
+    () => false
+  );
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -16,47 +25,60 @@ export function DevModal({ isOpen, onClose }: DevModalProps) {
       }
     };
     if (isOpen) {
+      const prevOverflow = document.body.style.overflow;
       document.body.style.overflow = "hidden";
       window.addEventListener("keydown", handleKeyDown);
-    } else {
-      document.body.style.overflow = "unset";
+      return () => {
+        document.body.style.overflow = prevOverflow;
+        window.removeEventListener("keydown", handleKeyDown);
+      };
     }
-    return () => {
-      document.body.style.overflow = "unset";
-      window.removeEventListener("keydown", handleKeyDown);
-    };
   }, [isOpen, onClose]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !isMounted) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+  return createPortal(
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Developer Profile"
+      className="fixed inset-0 z-[9999] overflow-y-auto"
+    >
       {/* Dark backdrop with blur */}
       <div
         className="fixed inset-0 bg-base/80 backdrop-blur-md transition-opacity animate-fade-in cursor-pointer"
         onClick={onClose}
+        aria-hidden="true"
       />
 
-      {/* Modal Dialog Content */}
-      <div className="relative z-10 w-full max-w-[440px] my-auto flex flex-col items-center animate-fade-in">
-        {/* Close Button top-right */}
-        <button
-          onClick={onClose}
-          className="absolute -top-3 -right-3 z-30 w-9 h-9 rounded-full bg-surface-highest/90 border border-white/20 text-text-primary hover:text-error hover:border-error/50 transition-all flex items-center justify-center shadow-lg hover:scale-110 cursor-pointer"
-          title="Close (Esc)"
-        >
-          <span className="material-symbols-outlined text-[20px]">close</span>
-        </button>
+      {/* Outer flex wrapper: min-h-full ensures proper top-down scrolling if content overflows */}
+      <div className="min-h-full flex items-center justify-center p-4 sm:p-6 relative z-10 pointer-events-none">
+        {/* Modal Dialog Content */}
+        <div className="relative w-full max-w-[440px] my-auto flex flex-col items-center animate-fade-in pointer-events-auto max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)]">
+          {/* Close Button top-right */}
+          <button
+            onClick={onClose}
+            className="absolute -top-3 -right-3 z-40 w-9 h-9 rounded-full bg-surface-highest/95 border border-white/20 text-text-primary hover:text-error hover:border-error/50 transition-all flex items-center justify-center shadow-xl hover:scale-110 cursor-pointer"
+            title="Close (Esc)"
+            aria-label="Close modal"
+          >
+            <span className="material-symbols-outlined text-[20px]">close</span>
+          </button>
 
-        {/* The 3D Interactive ProfileCard */}
-        <ProfileCard />
+          {/* Card container with internal scroll safety */}
+          <div className="w-full overflow-y-auto rounded-2xl">
+            {/* The 3D Interactive ProfileCard */}
+            <ProfileCard />
+          </div>
 
-        {/* Helper text */}
-        <p className="text-label-xs font-mono text-text-muted mt-3 text-center tracking-wider">
-          PRESS ESC OR CLICK OUTSIDE TO CLOSE • HOVER TO 3D TILT
-        </p>
+          {/* Helper text */}
+          <p className="text-label-xs font-mono text-text-muted mt-3 text-center tracking-wider select-none shrink-0">
+            PRESS ESC OR CLICK OUTSIDE TO CLOSE • HOVER TO 3D TILT
+          </p>
+        </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

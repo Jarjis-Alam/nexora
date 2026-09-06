@@ -108,3 +108,12 @@ export function getScoreColor(score: number): string {
   if (score >= 40) return "text-tertiary";
   return "text-error";
 }
+
+export function round2(val: number): number {
+  return Math.round((val + Number.EPSILON) * 100) / 100;
+}
+
+export function formatScore(score: number): string {
+  const rounded = round2(score);
+  return Number.isInteger(rounded) ? rounded.toString() : rounded.toFixed(2);
+}

@@ -76,9 +76,10 @@ export function QuestionForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-surface border border-border rounded-xl p-8 space-y-6"
+      className="space-y-7 rounded-xl border border-border bg-surface p-5 sm:p-8"
     >
       <div>
+        <p className="mb-3 text-label-xs font-mono font-bold uppercase tracking-wider text-primary-text">Question Content</p>
         <label className="text-label-xs text-text-muted uppercase font-mono block mb-2">
           Question Content *
         </label>
@@ -93,6 +94,10 @@ export function QuestionForm({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="sm:col-span-2">
+          <p className="mb-1 text-label-xs font-mono font-bold uppercase tracking-wider text-primary-text">Classification</p>
+          <p className="text-label-xs font-mono text-text-muted">Assign the curriculum subject and topic before configuring answers.</p>
+        </div>
         <div>
           <label className="text-label-xs text-text-muted uppercase font-mono block mb-2">
             Subject *
@@ -132,6 +137,9 @@ export function QuestionForm({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="sm:col-span-3">
+          <p className="mb-1 text-label-xs font-mono font-bold uppercase tracking-wider text-primary-text">Assessment Metadata</p>
+        </div>
         <div>
           <label className="text-label-xs text-text-muted uppercase font-mono block mb-2">
             Difficulty
@@ -174,6 +182,7 @@ export function QuestionForm({
 
       {/* Options */}
       <div className="space-y-3 pt-4 border-t border-border">
+        <p className="text-label-xs font-mono font-bold uppercase tracking-wider text-primary-text">Answer Configuration</p>
         <label className="text-label-xs text-text-muted uppercase font-mono block">
           Options (Enter at least 2)
         </label>
@@ -210,6 +219,7 @@ export function QuestionForm({
 
       {/* Explanation */}
       <div>
+        <p className="mb-3 text-label-xs font-mono font-bold uppercase tracking-wider text-primary-text">Explanation</p>
         <label className="text-label-xs text-text-muted uppercase font-mono block mb-2">
           Explanation & Derivation (Revealed Post-Submission)
         </label>

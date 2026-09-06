@@ -73,7 +73,7 @@ export function DeveloperFooter() {
       node: (
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-surface/90 border border-border text-text-secondary hover:text-text-primary transition-all duration-300 shadow-sm cursor-pointer">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-          <span className="text-[12px] font-mono">Placement OS • Precision Prep</span>
+          <span className="text-[12px] font-mono">Nexora • Precision Prep</span>
         </div>
       ),
     },
@@ -131,7 +131,7 @@ export function DeveloperFooter() {
           </div>
 
           <p className="text-label-xs text-text-muted font-mono">
-            Placement OS © {new Date().getFullYear()} • Industrial-Grade Placement Prep
+            Nexora © {new Date().getFullYear()} • Your Operating System for Placements
           </p>
         </div>
       </footer>

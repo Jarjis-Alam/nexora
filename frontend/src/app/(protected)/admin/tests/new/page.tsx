@@ -17,8 +17,11 @@ export default async function NewTestPage() {
     .select({
       id: questions.id,
       question: questions.question,
+      questionType: questions.questionType,
+      options: questions.options,
       difficulty: questions.difficulty,
       marks: questions.marks,
+      expectedTime: questions.expectedTime,
       subjectName: subjects.name,
       subjectCode: subjects.code,
       topicName: topics.name,
