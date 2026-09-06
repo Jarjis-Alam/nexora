@@ -81,7 +81,6 @@ PostgreSQL 16 (Relational Database with Foreign Key Cascades & Indexes)
 nexora/
 ├── README.md                      # Workspace documentation
 ├── backend/                       # Legacy python dependencies
-├── stitch designs/                # Stitch UI specification exports
 └── frontend/                      # Main Next.js Application
     ├── package.json               # Scripts and dependencies
     ├── next.config.ts             # Next.js & security headers configuration
@@ -97,7 +96,7 @@ nexora/
         │   ├── profile/           # Student academic profile & settings
         │   ├── admin/             # Admin Question Bank & Test Builder
         │   └── api/               # Auth, registration, profile, admin endpoints
-        ├── components/            # Reusable UI & Stitch-aligned components
+        ├── components/            # Reusable UI components & design system
         ├── db/                    # Drizzle connection, schema, seed, migrations
         │   ├── schema.ts          # Relational PostgreSQL schema definitions
         │   ├── migrations/        # Production Drizzle migration SQL files
@@ -105,7 +104,7 @@ nexora/
         │   └── seed.ts            # Development/demo seed data (160 questions)
         ├── lib/                   # Auth configurations, rate limiting, utils
         ├── server/                # Server actions, grading engine, readiness logic
-        └── test/                  # Automated verification & audit suites
+        └── test/                  # Automated verification & regression test suites
 ```
 
 ---
@@ -225,20 +224,11 @@ npm run lint
 # Core Algorithm Suite (Grading, Readiness, Immutability)
 npx tsx src/test/suite.ts
 
-# Authentication & RBAC Audit (30 assertions)
-npx tsx src/test/auth-audit.ts
-
-# Relational Database & Data Layer Audit (40 assertions)
-npx tsx src/test/database-audit.ts
-
-# End-to-End Integration Audit (60 assertions)
-npx tsx src/test/integration-audit.ts
+# Phase 11A Company & Role Intelligence Suite (70 assertions)
+npx tsx src/test/phase-11a-company-role-intelligence.ts
 
 # Start Test Attempt Engine Regression (23 assertions)
 npx tsx src/test/start-test-regression.ts
-
-# UI Spacing, Timers, & Component Validation (39 assertions)
-npx tsx src/test/m4-polish-audit.ts
 
 # Live Production HTTP Verification (19 assertions)
 npx tsx src/test/e2e-http-verification.ts
@@ -249,4 +239,4 @@ npx tsx src/test/security-regression.ts
 # End-to-End Production Smoke Test
 npx tsx src/test/smoke-test-flow.ts
 ```
-All **250+ automated assertions** pass with 0 failures.
+All automated test suites pass with 0 failures.
