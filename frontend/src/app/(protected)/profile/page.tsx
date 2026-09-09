@@ -223,11 +223,11 @@ export default async function ProfilePage() {
           <div className="rounded-xl border border-primary/30 bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary flex-shrink-0">
-                <span className="material-symbols-outlined text-[18px]">crosshair</span>
+                <span className="material-symbols-outlined text-[18px]">track_changes</span>
               </div>
               <div>
                 <span className="text-body-sm font-semibold text-text-primary block">
-                  Target Strategy Engine
+                  Placement Target Strategy
                 </span>
                 <span className="text-[12px] font-mono text-text-muted block">
                   Requirement matrix, gap analysis, and tailored preparation priorities.

@@ -877,7 +877,7 @@ export default async function DashboardPage() {
                     id="dashboard-view-target-strategy-btn"
                     className="flex-1 bg-surface-high border border-primary/30 text-primary-text font-medium text-[12px] py-2.5 px-3 rounded-lg hover:bg-surface-highest transition-colors flex items-center justify-center gap-1.5 font-mono shadow-sm"
                   >
-                    <span className="material-symbols-outlined text-[15px]">crosshair</span>
+                    <span className="material-symbols-outlined text-[15px]">track_changes</span>
                     <span>View Target Strategy</span>
                   </Link>
                   <Link
@@ -908,7 +908,7 @@ export default async function DashboardPage() {
                     className="py-2 px-3 rounded-lg border border-border bg-surface-high hover:bg-surface-highest text-text-secondary text-[12px] font-mono transition-colors inline-flex items-center justify-center gap-1"
                   >
                     <span>Strategy</span>
-                    <span className="material-symbols-outlined text-[15px]">crosshair</span>
+                    <span className="material-symbols-outlined text-[15px]">track_changes</span>
                   </Link>
                   <Link
                     href="/roadmap"

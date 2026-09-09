@@ -499,7 +499,7 @@ export default async function RoadmapPage() {
                     <div className="flex items-center gap-2 self-start sm:self-auto">
                       {action.isTargetPriority && (
                         <span className="text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider bg-primary/20 text-primary-text border border-primary/30 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[12px]">crosshair</span>
+                          <span className="material-symbols-outlined text-[12px]">track_changes</span>
                           TARGET PRIORITY
                         </span>
                       )}

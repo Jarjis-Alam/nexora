@@ -18,14 +18,14 @@ export default async function TargetStrategyPage() {
       <div className="flex flex-col gap-3 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2 mb-1 text-[11px] font-mono uppercase tracking-wider text-primary font-bold">
-            <span className="material-symbols-outlined text-[16px]">crosshair</span>
-            Placement Target Strategy
+            <span className="material-symbols-outlined text-[16px]">track_changes</span>
+            PLACEMENT TARGET STRATEGY
           </div>
           <h1 className="text-headline-lg font-bold text-text-primary tracking-tight">
-            Target Strategy Engine
+            Placement Target Strategy
           </h1>
           <p className="mt-1 text-label-xs font-mono uppercase text-text-muted">
-            NEXORA / STRATEGIC PREPARATION CONSOLE
+            NEXORA / YOUR OPERATING SYSTEM FOR PLACEMENTS
           </p>
         </div>
 
