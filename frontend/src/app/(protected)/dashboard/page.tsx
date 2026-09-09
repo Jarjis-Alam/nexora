@@ -44,6 +44,29 @@ export default async function DashboardPage() {
   // 4. Fetch Placement Targets (Phase 11A)
   const placementTargets = await getStudentPlacementTargets(userId);
 
+  // Preparation focus for the Placement Target card (real readiness data only)
+  const prepFocus = (() => {
+    if (!dataSufficiency.hasCompletedBaseline) {
+      return {
+        label: "Calibrate readiness",
+        detail: "Complete your baseline assessment to establish readiness.",
+      };
+    }
+    const weakest = [...readiness.subjectScores]
+      .filter((s) => s.score > 0)
+      .sort((a, b) => a.score - b.score)[0];
+    if (weakest && weakest.score < 70) {
+      return {
+        label: `Focus: ${weakest.name}`,
+        detail: `${weakest.score}% accuracy — prioritize this domain.`,
+      };
+    }
+    return {
+      label: "No critical gaps",
+      detail: "Maintain momentum with consistent mock tests.",
+    };
+  })();
+
   // 4. Fetch recent submitted activity
   const recentActivity = await db
     .select({
@@ -627,10 +650,14 @@ export default async function DashboardPage() {
             </div>
 
             {placementTargets.configured ? (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
+                {/* Primary Role */}
                 <div>
+                  <span className="text-[10px] font-mono text-text-muted uppercase block mb-0.5">
+                    Primary Role
+                  </span>
                   <span className="text-body-md font-bold text-text-primary block leading-snug">
-                    {placementTargets.primaryRole?.name || "Role Not Selected"}
+                    {placementTargets.primaryRole?.name || "Not selected"}
                   </span>
                   {placementTargets.primaryRole?.category && (
                     <span className="text-[11px] font-mono text-text-muted">
@@ -639,16 +666,46 @@ export default async function DashboardPage() {
                   )}
                 </div>
 
-                {placementTargets.targetCompanies.length > 0 && (
-                  <div className="pt-2 border-t border-border/60">
-                    <span className="text-[10px] font-mono text-text-muted uppercase block mb-1">
-                      Target Companies
+                {/* Primary Company */}
+                {placementTargets.primaryCompany && (
+                  <div>
+                    <span className="text-[10px] font-mono text-text-muted uppercase block mb-0.5">
+                      Primary Company
                     </span>
-                    <p className="text-body-sm text-text-secondary font-mono text-[12px] leading-relaxed">
-                      {placementTargets.targetCompanies.map((c) => c.name).join(" · ")}
-                    </p>
+                    <span className="text-body-sm font-semibold text-text-primary block leading-snug">
+                      {placementTargets.primaryCompany.name}
+                    </span>
+                    <span className="text-[11px] font-mono text-text-muted">
+                      {placementTargets.primaryCompany.industry}
+                    </span>
                   </div>
                 )}
+
+                {/* Target Counts */}
+                <div className="pt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-mono text-text-muted">
+                  <span>
+                    {placementTargets.roleCount}{" "}
+                    {placementTargets.roleCount === 1 ? "role" : "roles"}
+                  </span>
+                  <span>·</span>
+                  <span>
+                    {placementTargets.targetCount}{" "}
+                    {placementTargets.targetCount === 1 ? "company" : "companies"}
+                  </span>
+                </div>
+
+                {/* Preparation Focus (real readiness data) */}
+                <div className="pt-2 border-t border-border/60 space-y-0.5">
+                  <span className="text-[10px] font-mono text-text-muted uppercase block">
+                    Preparation Focus
+                  </span>
+                  <p className="text-body-sm text-text-primary font-semibold text-[12px]">
+                    {prepFocus.label}
+                  </p>
+                  <p className="text-[11px] font-mono text-text-secondary leading-relaxed">
+                    {prepFocus.detail}
+                  </p>
+                </div>
               </div>
             ) : (
               <div className="py-1">

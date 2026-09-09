@@ -85,6 +85,13 @@
       "when": 1788640000000,
       "tag": "0011_phase_11a_company_role_intelligence",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1788650000000,
+      "tag": "0012_phase_11b_multiple_target_roles",
+      "breakpoints": true
     }
   ]
 }

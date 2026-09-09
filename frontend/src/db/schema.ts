@@ -479,7 +479,10 @@ export const studentTargetRoles = pgTable(
       .defaultNow(),
   },
   (table) => [
-    uniqueIndex("student_target_roles_user_id_unique_idx").on(table.userId),
+    uniqueIndex("student_target_roles_user_role_idx").on(table.userId, table.roleId),
+    uniqueIndex("student_target_roles_single_primary_idx")
+      .on(table.userId)
+      .where(sql`${table.isPrimary} = true`),
     index("student_target_roles_role_id_idx").on(table.roleId),
   ]
 );

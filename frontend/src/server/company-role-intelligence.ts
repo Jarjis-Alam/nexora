@@ -6,7 +6,7 @@ import {
   studentTargetCompanies,
   users,
 } from "@/db/schema";
-import { eq, and, ilike, or, inArray, asc } from "drizzle-orm";
+import { eq, and, ilike, or, inArray, asc, sql } from "drizzle-orm";
 import {
   normalizeName,
   slugify,
@@ -256,6 +256,15 @@ export interface StudentPlacementTargets {
     description: string | null;
     isActive: boolean;
   } | null;
+  targetRoles: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    category: string;
+    description: string | null;
+    isActive: boolean;
+    isPrimary: boolean;
+  }>;
   targetCompanies: Array<{
     id: string;
     name: string;
@@ -266,7 +275,17 @@ export interface StudentPlacementTargets {
     isActive: boolean;
     priority: number;
   }>;
+  primaryCompany: {
+    id: string;
+    name: string;
+    slug: string;
+    industry: string;
+    description: string | null;
+    website: string | null;
+    isActive: boolean;
+  } | null;
   targetCount: number;
+  roleCount: number;
   configured: boolean;
   context: {
     role: {
@@ -286,6 +305,9 @@ export interface StudentPlacementTargets {
  * Retrieves the placement targets for a specific student.
  * Structured, deterministic, and isolated from UI logic.
  */
+const MAX_TARGET_ROLES = 10;
+const MAX_TARGET_COMPANIES = 10;
+
 export async function getStudentPlacementTargets(
   userId: string
 ): Promise<StudentPlacementTargets> {
@@ -293,8 +315,8 @@ export async function getStudentPlacementTargets(
     throw new Error("User ID is required");
   }
 
-  // 1. Fetch Primary Role
-  const primaryRoleRows = await db
+  // 1. Fetch ALL target roles (Phase 11B: multiple roles, exactly one primary)
+  const roleRows = await db
     .select({
       id: roles.id,
       name: roles.name,
@@ -302,20 +324,36 @@ export async function getStudentPlacementTargets(
       category: roles.category,
       description: roles.description,
       isActive: roles.isActive,
+      isPrimary: studentTargetRoles.isPrimary,
+      createdAt: studentTargetRoles.createdAt,
     })
     .from(studentTargetRoles)
     .innerJoin(roles, eq(studentTargetRoles.roleId, roles.id))
-    .where(
-      and(
-        eq(studentTargetRoles.userId, userId),
-        eq(studentTargetRoles.isPrimary, true)
-      )
-    )
-    .limit(1);
+    .where(eq(studentTargetRoles.userId, userId))
+    .orderBy(asc(studentTargetRoles.createdAt));
 
-  const primaryRole = primaryRoleRows.length > 0 ? primaryRoleRows[0] : null;
+  const targetRoles = roleRows.map((r) => ({
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    category: r.category,
+    description: r.description,
+    isActive: r.isActive,
+    isPrimary: r.isPrimary,
+  }));
+  const primaryRoleRow = roleRows.find((r) => r.isPrimary) ?? null;
+  const primaryRole = primaryRoleRow
+    ? {
+        id: primaryRoleRow.id,
+        name: primaryRoleRow.name,
+        slug: primaryRoleRow.slug,
+        category: primaryRoleRow.category,
+        description: primaryRoleRow.description,
+        isActive: primaryRoleRow.isActive,
+      }
+    : null;
 
-  // 2. Fetch Target Companies ordered by priority
+  // 2. Fetch Target Companies ordered by priority (priority 1 = primary company)
   const targetCompanyRows = await db
     .select({
       id: companies.id,
@@ -333,7 +371,20 @@ export async function getStudentPlacementTargets(
     .orderBy(asc(studentTargetCompanies.priority));
 
   const targetCompanies = targetCompanyRows;
-  const configured = primaryRole !== null || targetCompanies.length > 0;
+  const primaryCompany =
+    targetCompanies.length > 0
+      ? {
+          id: targetCompanies[0].id,
+          name: targetCompanies[0].name,
+          slug: targetCompanies[0].slug,
+          industry: targetCompanies[0].industry,
+          description: targetCompanies[0].description,
+          website: targetCompanies[0].website,
+          isActive: targetCompanies[0].isActive,
+        }
+      : null;
+
+  const configured = targetRoles.length > 0 || targetCompanies.length > 0;
 
   // 3. Construct clean intelligence context for future phases
   const context = {
@@ -353,8 +404,11 @@ export async function getStudentPlacementTargets(
 
   return {
     primaryRole,
+    targetRoles,
     targetCompanies,
+    primaryCompany,
     targetCount: targetCompanies.length,
+    roleCount: targetRoles.length,
     configured,
     context,
   };
@@ -421,23 +475,19 @@ export async function updateStudentPlacementTargets(
         throw new Error(`Role "${roleRow[0].name}" is inactive and cannot be selected`);
       }
 
-      // Upsert target primary role (unique constraint on userId ensures exactly one)
-      await db
-        .insert(studentTargetRoles)
-        .values({
+      // Phase 11A contract: exactly one role row per user, always primary.
+      // (Phase 11B multi-role management uses addStudentTargetRole / setStudentPrimaryRole.)
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(studentTargetRoles)
+          .where(eq(studentTargetRoles.userId, userId));
+        await tx.insert(studentTargetRoles).values({
           userId,
           roleId: primaryRoleId,
           isPrimary: true,
           updatedAt: new Date(),
-        })
-        .onConflictDoUpdate({
-          target: studentTargetRoles.userId,
-          set: {
-            roleId: primaryRoleId,
-            isPrimary: true,
-            updatedAt: new Date(),
-          },
         });
+      });
     }
   }
 
@@ -492,6 +542,350 @@ export async function updateStudentPlacementTargets(
       });
     }
   }
+
+  return getStudentPlacementTargets(userId);
+}
+
+// ==========================================
+// PHASE 11B — GRANULAR STUDENT TARGET MUTATIONS
+// Each mutation is server-authoritative: the userId is always the authenticated
+// session user (never client-supplied). All IDs are validated; duplicates,
+// nonexistent/inactive entities, and limit overruns are rejected with safe errors.
+// ==========================================
+
+/**
+ * Adds a role to the student's target roles.
+ * The first role added becomes the primary role automatically.
+ */
+export async function addStudentTargetRole(
+  userId: string,
+  roleId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const roleRow = await db
+    .select({ id: roles.id, name: roles.name, isActive: roles.isActive })
+    .from(roles)
+    .where(eq(roles.id, roleId))
+    .limit(1);
+
+  if (roleRow.length === 0) {
+    throw new Error("Selected role does not exist");
+  }
+  if (!roleRow[0].isActive) {
+    throw new Error(`Role "${roleRow[0].name}" is inactive and cannot be selected`);
+  }
+
+  const existing = await db
+    .select({ id: studentTargetRoles.id })
+    .from(studentTargetRoles)
+    .where(
+      and(
+        eq(studentTargetRoles.userId, userId),
+        eq(studentTargetRoles.roleId, roleId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    throw new Error("This role is already one of your target roles");
+  }
+
+  const countRes = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(studentTargetRoles)
+    .where(eq(studentTargetRoles.userId, userId));
+
+  const roleCount = Number(countRes[0]?.count ?? 0);
+  if (roleCount >= MAX_TARGET_ROLES) {
+    throw new Error(`Cannot select more than ${MAX_TARGET_ROLES} target roles`);
+  }
+
+  await db.insert(studentTargetRoles).values({
+    userId,
+    roleId,
+    isPrimary: roleCount === 0,
+    updatedAt: new Date(),
+  });
+
+  return getStudentPlacementTargets(userId);
+}
+
+/**
+ * Removes a role from the student's target roles.
+ * If the primary role is removed, the oldest remaining role is promoted.
+ */
+export async function removeStudentTargetRole(
+  userId: string,
+  roleId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const row = await db
+    .select({ id: studentTargetRoles.id, isPrimary: studentTargetRoles.isPrimary })
+    .from(studentTargetRoles)
+    .where(
+      and(
+        eq(studentTargetRoles.userId, userId),
+        eq(studentTargetRoles.roleId, roleId)
+      )
+    )
+    .limit(1);
+
+  if (row.length === 0) {
+    throw new Error("Role is not one of your target roles");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(studentTargetRoles)
+      .where(
+        and(
+          eq(studentTargetRoles.userId, userId),
+          eq(studentTargetRoles.roleId, roleId)
+        )
+      );
+
+    // Promote the oldest remaining role when the primary was removed
+    if (row[0].isPrimary) {
+      const remaining = await tx
+        .select({ id: studentTargetRoles.id })
+        .from(studentTargetRoles)
+        .where(eq(studentTargetRoles.userId, userId))
+        .orderBy(asc(studentTargetRoles.createdAt))
+        .limit(1);
+
+      if (remaining.length > 0) {
+        await tx
+          .update(studentTargetRoles)
+          .set({ isPrimary: true, updatedAt: new Date() })
+          .where(eq(studentTargetRoles.id, remaining[0].id));
+      }
+    }
+  });
+
+  return getStudentPlacementTargets(userId);
+}
+
+/**
+ * Designates one of the student's existing target roles as primary.
+ */
+export async function setStudentPrimaryRole(
+  userId: string,
+  roleId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const row = await db
+    .select({ id: studentTargetRoles.id })
+    .from(studentTargetRoles)
+    .where(
+      and(
+        eq(studentTargetRoles.userId, userId),
+        eq(studentTargetRoles.roleId, roleId)
+      )
+    )
+    .limit(1);
+
+  if (row.length === 0) {
+    throw new Error("Role must be added to your targets before it can be set as primary");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .update(studentTargetRoles)
+      .set({ isPrimary: false, updatedAt: new Date() })
+      .where(eq(studentTargetRoles.userId, userId));
+    await tx
+      .update(studentTargetRoles)
+      .set({ isPrimary: true, updatedAt: new Date() })
+      .where(
+        and(
+          eq(studentTargetRoles.userId, userId),
+          eq(studentTargetRoles.roleId, roleId)
+        )
+      );
+  });
+
+  return getStudentPlacementTargets(userId);
+}
+
+/**
+ * Adds a company to the student's target companies (appended at the end).
+ */
+export async function addStudentTargetCompany(
+  userId: string,
+  companyId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const compRow = await db
+    .select({ id: companies.id, name: companies.name, isActive: companies.isActive })
+    .from(companies)
+    .where(eq(companies.id, companyId))
+    .limit(1);
+
+  if (compRow.length === 0) {
+    throw new Error("Selected company does not exist");
+  }
+  if (!compRow[0].isActive) {
+    throw new Error(`Company "${compRow[0].name}" is inactive and cannot be selected`);
+  }
+
+  const existing = await db
+    .select({ id: studentTargetCompanies.id })
+    .from(studentTargetCompanies)
+    .where(
+      and(
+        eq(studentTargetCompanies.userId, userId),
+        eq(studentTargetCompanies.companyId, companyId)
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    throw new Error("This company is already one of your target companies");
+  }
+
+  const maxRes = await db
+    .select({
+      maxPriority: sql<number>`COALESCE(max(${studentTargetCompanies.priority}), 0)`,
+    })
+    .from(studentTargetCompanies)
+    .where(eq(studentTargetCompanies.userId, userId));
+
+  const nextPriority = Number(maxRes[0]?.maxPriority ?? 0) + 1;
+  if (nextPriority > MAX_TARGET_COMPANIES) {
+    throw new Error(`Cannot select more than ${MAX_TARGET_COMPANIES} target companies`);
+  }
+
+  await db.insert(studentTargetCompanies).values({
+    userId,
+    companyId,
+    priority: nextPriority,
+    updatedAt: new Date(),
+  });
+
+  return getStudentPlacementTargets(userId);
+}
+
+/**
+ * Removes a company from the student's target companies and renumbers priorities.
+ */
+export async function removeStudentTargetCompany(
+  userId: string,
+  companyId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const row = await db
+    .select({ id: studentTargetCompanies.id })
+    .from(studentTargetCompanies)
+    .where(
+      and(
+        eq(studentTargetCompanies.userId, userId),
+        eq(studentTargetCompanies.companyId, companyId)
+      )
+    )
+    .limit(1);
+
+  if (row.length === 0) {
+    throw new Error("Company is not one of your target companies");
+  }
+
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(studentTargetCompanies)
+      .where(
+        and(
+          eq(studentTargetCompanies.userId, userId),
+          eq(studentTargetCompanies.companyId, companyId)
+        )
+      );
+
+    // Renumber remaining priorities contiguously 1..N
+    const remaining = await tx
+      .select({ id: studentTargetCompanies.id, priority: studentTargetCompanies.priority })
+      .from(studentTargetCompanies)
+      .where(eq(studentTargetCompanies.userId, userId))
+      .orderBy(asc(studentTargetCompanies.priority));
+
+    for (let i = 0; i < remaining.length; i++) {
+      if (remaining[i].priority !== i + 1) {
+        await tx
+          .update(studentTargetCompanies)
+          .set({ priority: i + 1, updatedAt: new Date() })
+          .where(eq(studentTargetCompanies.id, remaining[i].id));
+      }
+    }
+  });
+
+  return getStudentPlacementTargets(userId);
+}
+
+/**
+ * Designates one of the student's existing target companies as primary
+ * by moving it to priority 1 (others shift down).
+ */
+export async function setStudentPrimaryCompany(
+  userId: string,
+  companyId: string
+): Promise<StudentPlacementTargets> {
+  if (!userId) {
+    throw new Error("User ID is required");
+  }
+
+  const row = await db
+    .select({ id: studentTargetCompanies.id, priority: studentTargetCompanies.priority })
+    .from(studentTargetCompanies)
+    .where(
+      and(
+        eq(studentTargetCompanies.userId, userId),
+        eq(studentTargetCompanies.companyId, companyId)
+      )
+    )
+    .limit(1);
+
+  if (row.length === 0) {
+    throw new Error("Company must be added to your targets before it can be set as primary");
+  }
+  if (row[0].priority === 1) {
+    return getStudentPlacementTargets(userId);
+  }
+
+  const targetPriority = row[0].priority;
+  await db.transaction(async (tx) => {
+    const rows = await tx
+      .select({ id: studentTargetCompanies.id, priority: studentTargetCompanies.priority })
+      .from(studentTargetCompanies)
+      .where(eq(studentTargetCompanies.userId, userId))
+      .orderBy(asc(studentTargetCompanies.priority));
+
+    for (const r of rows) {
+      let newPriority = r.priority;
+      if (r.id === row[0].id) {
+        newPriority = 1;
+      } else if (r.priority < targetPriority) {
+        newPriority = r.priority + 1;
+      }
+      if (newPriority !== r.priority) {
+        await tx
+          .update(studentTargetCompanies)
+          .set({ priority: newPriority, updatedAt: new Date() })
+          .where(eq(studentTargetCompanies.id, r.id));
+      }
+    }
+  });
 
   return getStudentPlacementTargets(userId);
 }

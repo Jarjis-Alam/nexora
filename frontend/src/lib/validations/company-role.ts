@@ -175,6 +175,39 @@ export const studentTargetsUpdateSchema = z.object({
     .optional(),
 });
 
+/**
+ * Granular student targeting actions (Phase 11B).
+ * Each action mutates exactly one relationship; all IDs are validated as UUIDs.
+ */
+export const studentTargetActionSchema = z.discriminatedUnion("action", [
+  z.object({
+    action: z.literal("addRole"),
+    roleId: z.string().regex(uuidRegex, "Invalid role ID format"),
+  }),
+  z.object({
+    action: z.literal("removeRole"),
+    roleId: z.string().regex(uuidRegex, "Invalid role ID format"),
+  }),
+  z.object({
+    action: z.literal("setPrimaryRole"),
+    roleId: z.string().regex(uuidRegex, "Invalid role ID format"),
+  }),
+  z.object({
+    action: z.literal("addCompany"),
+    companyId: z.string().regex(uuidRegex, "Invalid company ID format"),
+  }),
+  z.object({
+    action: z.literal("removeCompany"),
+    companyId: z.string().regex(uuidRegex, "Invalid company ID format"),
+  }),
+  z.object({
+    action: z.literal("setPrimaryCompany"),
+    companyId: z.string().regex(uuidRegex, "Invalid company ID format"),
+  }),
+]);
+
+export type StudentTargetAction = z.infer<typeof studentTargetActionSchema>;
+
 export type CompanyCreateInput = z.input<typeof companyCreateSchema>;
 export type CompanyUpdateInput = z.input<typeof companyUpdateSchema>;
 export type RoleCreateInput = z.input<typeof roleCreateSchema>;
