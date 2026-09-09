@@ -8,7 +8,7 @@ export default async function LandingPage() {
   const session = await auth();
 
   const navItems = [
-    { label: "Features", href: "#features" },
+    { label: "Preparation Loop", href: "#loop" },
     { label: "Readiness Model", href: "#readiness" },
     { label: "Curriculum", href: "#curriculum" },
   ];
@@ -63,35 +63,44 @@ export default async function LandingPage() {
 
       {/* Hero Section */}
       <section className="pt-16 pb-12 container-fluid text-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-surface text-label-xs text-text-muted mb-8">
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-surface text-label-xs text-text-muted mb-6">
           <span className="w-2 h-2 rounded-full bg-secondary animate-pulse" />
-          <span>PHASE 1 ENGINE LIVE • 7 SUBJECTS • 130+ ASSESSMENTS</span>
+          <span>NEXORA PLATFORM LIVE • 7 SUBJECTS • 160+ VETTED QUESTIONS</span>
         </div>
 
-        <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-text-primary mb-6 leading-tight">
-          Your Operating System <br className="hidden sm:inline" />
-          for <span className="text-primary-text">Placements</span>
-        </h1>
+        <div className="max-w-4xl mx-auto mb-4">
+          <p className="text-label-xs font-mono uppercase tracking-widest text-primary mb-3">
+            NEXORA — CAMPUS PLACEMENT OPERATING SYSTEM
+          </p>
+          <h1 className="text-4xl sm:text-6xl font-bold tracking-tight text-text-primary leading-tight">
+            Your Operating System <br className="hidden sm:inline" />
+            for <span className="text-primary-text">Placements</span>
+          </h1>
+        </div>
 
-        <p className="text-body-md text-text-secondary max-w-2xl mx-auto mb-10 text-lg leading-relaxed">
-          Assess your skills, identify your weaknesses, practice smarter, and
-          measure your placement readiness with high-precision metrics.
+        <p className="text-title-md text-text-primary max-w-xl mx-auto font-medium mb-3">
+          Assess. Analyze. Improve. Get placement-ready.
+        </p>
+
+        <p className="text-body-sm text-text-secondary max-w-2xl mx-auto mb-8 leading-relaxed">
+          Nexora assesses students through standardized benchmarks, analyzes performance across 7 placement domains, identifies topic weaknesses, considers your target companies, and generates a personalized preparation roadmap.
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href={session ? "/dashboard" : "/auth/register"}
-            className="w-full sm:w-auto bg-primary text-text-inverse font-medium text-body-sm px-8 py-3.5 rounded hover:bg-primary-text transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
+            className="w-full sm:w-auto bg-primary text-text-inverse font-semibold text-body-sm px-8 py-3.5 rounded hover:bg-primary-text transition-colors flex items-center justify-center gap-2 shadow-lg shadow-primary/10"
           >
             Start Assessment
             <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
           </Link>
-          <Link
-            href={session ? "/tests" : "/auth/login"}
-            className="w-full sm:w-auto bg-surface border border-border text-text-primary font-medium text-body-sm px-8 py-3.5 rounded hover:bg-surface-high transition-colors"
+          <a
+            href="#loop"
+            className="w-full sm:w-auto bg-surface border border-border text-text-primary font-medium text-body-sm px-8 py-3.5 rounded hover:bg-surface-high transition-colors flex items-center justify-center gap-1.5"
           >
-            Explore Tests
-          </Link>
+            <span>Explore Nexora</span>
+            <span className="material-symbols-outlined text-[16px]">expand_more</span>
+          </a>
         </div>
       </section>
 
@@ -156,6 +165,50 @@ export default async function LandingPage() {
               </div>
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 6-Step Placement Preparation Loop */}
+      <section id="loop" className="container-fluid py-20 scroll-mt-20 border-t border-border/80">
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border bg-surface text-label-xs text-primary-text font-mono mb-3">
+            <span className="w-1.5 h-1.5 rounded-full bg-primary" />
+            THE CONTINUOUS PREPARATION LOOP
+          </div>
+          <h2 className="text-headline-lg font-bold text-text-primary">
+            How Nexora Works
+          </h2>
+          <p className="text-body-sm text-text-secondary mt-2 max-w-xl mx-auto leading-relaxed">
+            A closed-loop engineering architecture designed to guide you from initial calibration to placement readiness.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-5xl mx-auto">
+          {[
+            { step: "01", name: "Assess", detail: "Complete a standardized diagnostic test covering core CS, DSA, and aptitude.", icon: "assignment" },
+            { step: "02", name: "Analyze", detail: "Measure accuracy, timing, unanswered rates, and negative marking discipline.", icon: "insights" },
+            { step: "03", name: "Identify Weaknesses", detail: "Isolate verified sub-topics and conceptual deficits holding back your score.", icon: "track_changes" },
+            { step: "04", name: "Set Targets", detail: "Configure target roles and priority companies to contextualize preparation.", icon: "target" },
+            { step: "05", name: "Generate Roadmap", detail: "Receive a prioritized, sequenced roadmap with actionable next steps.", icon: "alt_route" },
+            { step: "06", name: "Practice & Reassess", detail: "Execute practice recommendations and re-test to verify measurable gains.", icon: "trending_up" },
+          ].map((item) => (
+            <div key={item.step} className="p-5 rounded-xl bg-surface border border-border/80 hover:border-primary/40 transition-colors space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-label-xs text-primary-text font-bold">
+                  STEP {item.step}
+                </span>
+                <span className="material-symbols-outlined text-primary text-[20px]">
+                  {item.icon}
+                </span>
+              </div>
+              <h3 className="text-body-md font-bold text-text-primary">
+                {item.name}
+              </h3>
+              <p className="text-body-sm text-text-secondary text-[13px] leading-relaxed">
+                {item.detail}
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 

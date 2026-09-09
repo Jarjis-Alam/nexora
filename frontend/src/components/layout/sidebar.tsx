@@ -26,8 +26,10 @@ export function Sidebar({ baselineTestId, isAdmin: initialIsAdmin }: SidebarProp
   const assessmentHref = baselineTestId ? `/tests/${baselineTestId}` : "/assessment";
   const mainNavItems = [
     { label: "Dashboard", href: "/dashboard", icon: "dashboard" },
-    { label: "Tests", href: "/tests", icon: "quiz" },
+    { label: "Target Strategy", href: "/target", icon: "crosshair" },
     { label: "Assessment", href: assessmentHref, icon: "assignment" },
+    { label: "Tests", href: "/tests", icon: "quiz" },
+    { label: "Roadmap", href: "/roadmap", icon: "alt_route" },
     { label: "Analytics", href: "/analytics", icon: "insights" },
     { label: "Profile", href: "/profile", icon: "person" },
   ];

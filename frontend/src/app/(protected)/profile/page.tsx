@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { db } from "@/db";
@@ -191,6 +192,56 @@ export default async function ProfilePage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Placement Roadmap Entry (Phase 12) */}
+          <div className="rounded-xl border border-border bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary flex-shrink-0">
+                <span className="material-symbols-outlined text-[18px]">alt_route</span>
+              </div>
+              <div>
+                <span className="text-body-sm font-semibold text-text-primary block">
+                  Your Placement Roadmap
+                </span>
+                <span className="text-[12px] font-mono text-text-muted block">
+                  Personalized preparation sequence based on your readiness and targets.
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/roadmap"
+              id="profile-view-roadmap-btn"
+              className="px-4 py-2 rounded-lg bg-surface-high border border-primary/30 text-primary-text hover:bg-surface-highest text-[12px] font-mono font-medium transition-colors inline-flex items-center gap-1.5 self-start sm:self-auto flex-shrink-0"
+            >
+              <span>View Roadmap</span>
+              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </Link>
+          </div>
+
+          {/* Target Strategy Entry (Phase 16) */}
+          <div className="rounded-xl border border-primary/30 bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center text-primary flex-shrink-0">
+                <span className="material-symbols-outlined text-[18px]">crosshair</span>
+              </div>
+              <div>
+                <span className="text-body-sm font-semibold text-text-primary block">
+                  Target Strategy Engine
+                </span>
+                <span className="text-[12px] font-mono text-text-muted block">
+                  Requirement matrix, gap analysis, and tailored preparation priorities.
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/target"
+              id="profile-view-target-strategy-btn"
+              className="px-4 py-2 rounded-lg bg-primary text-text-inverse hover:bg-primary-text text-[12px] font-mono font-semibold transition-colors inline-flex items-center gap-1.5 self-start sm:self-auto flex-shrink-0 shadow-sm"
+            >
+              <span>View Target Strategy</span>
+              <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+            </Link>
           </div>
 
           {/* Placement Targets (Phase 11A) */}

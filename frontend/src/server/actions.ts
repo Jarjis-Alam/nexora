@@ -81,10 +81,22 @@ export async function submitTestAttemptAction(attemptId: string) {
 
   const result = await gradeAttempt(attemptId, session.user.id);
   revalidatePath("/dashboard");
+  revalidatePath("/roadmap");
   revalidatePath("/analytics");
   revalidatePath("/profile");
   revalidatePath("/tests");
   return result;
+}
+
+export async function startTargetedPracticeAction(topicId?: string, subjectCode?: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  const { getOrCreateTargetedPracticeTest } = await import("./placement-intelligence");
+  const practiceTest = await getOrCreateTargetedPracticeTest({ topicId, subjectCode });
+  return practiceTest;
 }
 
 export async function duplicateTestAction(sourceTestId: string) {

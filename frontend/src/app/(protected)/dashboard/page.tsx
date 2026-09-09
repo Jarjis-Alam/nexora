@@ -5,6 +5,9 @@ import { profiles, tests, attempts } from "@/db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import { getStudentIntelligence } from "@/server/student-intelligence";
 import { getStudentPlacementTargets } from "@/server/company-role-intelligence";
+import { getPlacementIntelligence } from "@/server/placement-intelligence";
+import { getDailyExecutionPlan } from "@/server/placement-execution";
+import { getPlacementTargetStrategy } from "@/server/placement-target-strategy";
 import { getGreeting, formatDateTime, getScoreColor, getSkillLevel } from "@/lib/utils";
 
 export default async function DashboardPage() {
@@ -31,18 +34,18 @@ export default async function DashboardPage() {
     .limit(1);
   const baselineTestId = baselineList[0]?.id;
 
-  // 3. Centralized Student Intelligence & Recommendations
-  const intelligence = await getStudentIntelligence(userId);
+  // 3. Centralized Student Intelligence, Phase 14 Action Engine, Phase 15 Execution OS & Phase 16 Target Strategy
+  const [intelligence, placementIntelligence, placementTargets, dailyPlan, targetStrategy] = await Promise.all([
+    getStudentIntelligence(userId),
+    getPlacementIntelligence(userId),
+    getStudentPlacementTargets(userId),
+    getDailyExecutionPlan(userId),
+    getPlacementTargetStrategy(userId),
+  ]);
+
   const readiness = intelligence.readiness;
   const dataSufficiency = intelligence.dataSufficiency;
-  const recommendations = intelligence.recommendations;
   const topAction = intelligence.topAction;
-  const otherRecommendations = topAction
-    ? recommendations.filter((r) => r.id !== topAction.id)
-    : [];
-
-  // 4. Fetch Placement Targets (Phase 11A)
-  const placementTargets = await getStudentPlacementTargets(userId);
 
   // Preparation focus for the Placement Target card (real readiness data only)
   const prepFocus = (() => {
@@ -306,54 +309,46 @@ export default async function DashboardPage() {
             )}
           </section>
 
-          {/* 3. Personalized Dashboard: "Your Next Actions" (Recommended for You) */}
+          {/* 3. Placement Execution OS: "WHAT SHOULD I DO TODAY?" */}
           <section className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-title-md font-semibold text-text-primary flex items-center gap-2">
-                  <span className="material-symbols-outlined text-[20px] text-primary">auto_awesome</span>
-                  Your Next Actions
+                <div className="flex items-center gap-2 text-[10px] font-mono uppercase tracking-widest text-primary font-semibold">
+                  <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                  <span>Execution OS • Your Next Actions</span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-bold text-text-primary tracking-tight mt-0.5">
+                  WHAT SHOULD I DO TODAY?
                 </h2>
-                <p className="text-label-xs text-text-muted mt-0.5">
-                  High-value, deterministic actions generated from your verified test data
+                <p className="text-body-sm text-text-secondary mt-0.5">
+                  Your Next Actions: Daily prioritized execution plan derived from your verified test performance
                 </p>
               </div>
-              {dataSufficiency.status === "limited_data" && (
-                <span className="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary-text font-mono text-[11px] font-semibold">
-                  EARLY SIGNAL
-                </span>
-              )}
+              <Link
+                href="/roadmap"
+                className="text-primary-text font-mono text-[12px] hover:text-primary transition-colors flex items-center gap-1 font-medium"
+              >
+                <span>View Roadmap</span>
+                <span className="material-symbols-outlined text-[16px]">chevron_right</span>
+              </Link>
             </div>
 
-            {/* Zero-Data Experience */}
-            {!dataSufficiency.hasCompletedBaseline ? (
+            {/* Zero-Data / Empty Experience */}
+            {!dailyPlan.hasEnoughData ? (
               <div className="p-6 sm:p-8 rounded-2xl bg-surface/90 border border-border/80 text-center flex flex-col items-center justify-center space-y-4">
                 <div className="w-14 h-14 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center text-primary mb-1">
-                  <span className="material-symbols-outlined text-[28px]">rocket_launch</span>
+                  <span className="material-symbols-outlined text-[28px]">flag</span>
                 </div>
                 <div className="max-w-md">
-                  <h3 className="text-body-md font-bold text-text-primary mb-1.5">
-                    Complete your baseline assessment to unlock personalized recommendations
+                  <span className="text-[10px] font-mono uppercase tracking-widest text-primary font-bold">
+                    CALIBRATION REQUIRED
+                  </span>
+                  <h3 className="text-title-md font-bold text-text-primary mt-1 mb-1.5">
+                    BUILD YOUR BASELINE
                   </h3>
                   <p className="text-body-sm text-text-secondary leading-relaxed">
-                    Nexora uses verified test activity to generate actionable guidance. No synthetic data, no hallucinations.
+                    Complete an assessment to unlock your personalized preparation plan. Nexora analyzes your verified responses across 7 core placement domains.
                   </p>
-                </div>
-
-                {/* 3-Step Pipeline Explanation */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full max-w-xl text-left my-2">
-                  <div className="p-3 rounded-lg bg-surface-high border border-border font-mono text-[11px]">
-                    <span className="text-primary font-bold block mb-1">1. Assessment</span>
-                    Complete the 30-min baseline diagnostic.
-                  </div>
-                  <div className="p-3 rounded-lg bg-surface-high border border-border font-mono text-[11px]">
-                    <span className="text-text-muted font-bold block mb-1">2. Insights</span>
-                    Detect true weak topics and speed trends.
-                  </div>
-                  <div className="p-3 rounded-lg bg-surface-high border border-border font-mono text-[11px]">
-                    <span className="text-text-muted font-bold block mb-1">3. Actions</span>
-                    Targeted practice routes for immediate score gains.
-                  </div>
                 </div>
 
                 <Link
@@ -361,107 +356,262 @@ export default async function DashboardPage() {
                   className="bg-primary text-text-inverse font-medium text-body-sm px-7 py-3 rounded-lg hover:bg-primary-text transition-all inline-flex items-center gap-2 shadow-sm"
                 >
                   <span className="material-symbols-outlined text-[18px]">play_circle</span>
-                  Start Baseline Assessment
+                  Start Assessment
                 </Link>
               </div>
-            ) : topAction ? (
+            ) : (
               <div className="space-y-4">
-                {/* Primary #1 Next Action Card */}
-                <div className="p-5 sm:p-6 rounded-2xl bg-surface border-2 border-primary/40 relative overflow-hidden shadow-sm">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-                    <div className="flex items-center gap-2.5">
-                      <span
-                        className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
-                          topAction.priority === "Critical"
-                            ? "bg-error/20 text-error border border-error/30"
-                            : topAction.priority === "High"
-                            ? "bg-tertiary/20 text-tertiary border border-tertiary/30"
-                            : "bg-primary/20 text-primary-text border border-primary/30"
-                        }`}
-                      >
-                        {topAction.priority} Priority • #1 Next Action
-                      </span>
-                      <span className="text-[11px] font-mono text-text-muted uppercase">
-                        {topAction.type.replace("_", " ")}
-                      </span>
+                {/* Partial-Data State Banner */}
+                {dailyPlan.isPartialData && (
+                  <div className="p-4 rounded-xl bg-surface-high/80 border border-tertiary/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span className="material-symbols-outlined text-[22px] text-tertiary">info</span>
+                      <div>
+                        <h4 className="text-body-sm font-bold text-text-primary">
+                          KEEP BUILDING YOUR BASELINE
+                        </h4>
+                        <p className="text-[12px] font-mono text-text-muted mt-0.5">
+                          You have enough data for an initial recommendation, but more practice will make your plan more precise.
+                        </p>
+                      </div>
                     </div>
+                    <Link
+                      href="/tests"
+                      className="text-primary-text font-mono text-[12px] font-semibold hover:underline whitespace-nowrap"
+                    >
+                      CONTINUE PRACTICE →
+                    </Link>
+                  </div>
+                )}
 
-                    <span className="text-label-xs font-mono text-secondary font-semibold bg-surface-high px-2.5 py-1 rounded-md border border-border self-start sm:self-auto">
-                      {topAction.metric}
-                    </span>
+                {/* Compact Execution Progress Component */}
+                <div className="p-5 sm:p-6 rounded-2xl bg-surface/90 border border-border/80 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="material-symbols-outlined text-primary text-[20px]">task_alt</span>
+                      <h3 className="text-title-md font-bold text-text-primary">
+                        TODAY&apos;S PROGRESS
+                      </h3>
+                    </div>
+                    <div className="flex items-baseline gap-2 font-mono">
+                      <span className="text-2xl font-bold text-text-primary">
+                        {dailyPlan.completedCount} / {dailyPlan.totalCount}
+                      </span>
+                      <span className="text-[12px] text-text-muted">actions complete</span>
+                    </div>
                   </div>
 
-                  <h3 className="text-lg sm:text-xl font-bold text-text-primary tracking-tight mb-2">
-                    {topAction.title}
-                  </h3>
+                  {/* Progress Bar */}
+                  <div className="w-full bg-surface-highest h-2.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500 rounded-full"
+                      style={{ width: `${dailyPlan.progressPercent}%` }}
+                    />
+                  </div>
 
-                  <p className="text-body-sm text-text-secondary leading-relaxed mb-5 max-w-3xl">
-                    {topAction.reason}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <Link
-                      href={topAction.route}
-                      className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded-lg hover:bg-primary-text transition-colors inline-flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                    >
-                      <span>{topAction.ctaText}</span>
-                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
-                    </Link>
-                    {topAction.recommendedTestTitle && (
-                      <span className="text-[12px] font-mono text-text-muted">
-                        Target Test: <span className="text-text-primary">{topAction.recommendedTestTitle}</span>
-                      </span>
-                    )}
+                  <div className="flex items-center justify-between text-[11px] font-mono text-text-muted">
+                    <span className="text-secondary font-semibold">
+                      {dailyPlan.completedCount} completed
+                    </span>
+                    <span className="font-semibold text-text-primary">
+                      {dailyPlan.progressPercent}%
+                    </span>
+                    <span>
+                      {dailyPlan.remainingCount} remaining
+                    </span>
                   </div>
                 </div>
 
-                {/* Secondary Recommendations (2-4 cards) */}
-                {otherRecommendations.length > 0 && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-                    {otherRecommendations.map((rec) => (
-                      <div
-                        key={rec.id}
-                        className="p-4 rounded-xl bg-surface/90 border border-border/80 flex flex-col justify-between hover:border-border-variant hover:bg-surface-high transition-all"
-                      >
-                        <div>
-                          <div className="flex items-center justify-between gap-2 mb-2">
+                {/* Execution Plan Action Cards */}
+                {dailyPlan.actions.map((action) => {
+                  const orderStr = action.order < 10 ? `0${action.order}` : `${action.order}`;
+                  const isCompleted = action.status === "COMPLETED";
+                  const isInProgress = action.status === "IN_PROGRESS";
+
+                  return (
+                    <div
+                      key={action.id}
+                      className={`p-5 sm:p-6 rounded-2xl border transition-all relative overflow-hidden shadow-sm ${
+                        isCompleted
+                          ? "bg-surface/50 border-secondary/30 opacity-90"
+                          : isInProgress
+                          ? "bg-surface border-primary/50 shadow-md ring-1 ring-primary/20"
+                          : action.order === 1
+                          ? "bg-surface border-primary/30"
+                          : "bg-surface/90 border-border/80 hover:border-border-variant"
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl font-bold font-mono text-primary-text">
+                            {orderStr}
+                          </span>
+                          <div className="flex items-center gap-2">
                             <span
-                              className={`text-[9px] font-mono px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${
-                                rec.priority === "Critical"
-                                  ? "bg-error/20 text-error"
-                                  : rec.priority === "High"
-                                  ? "bg-tertiary/20 text-tertiary"
-                                  : "bg-surface-highest text-text-muted"
+                              className={`text-[10px] font-mono px-2 py-0.5 rounded font-bold uppercase tracking-wider ${
+                                action.type === "FIX"
+                                  ? "bg-error/20 text-error border border-error/30"
+                                  : action.type === "REINFORCE"
+                                  ? "bg-tertiary/20 text-tertiary border border-tertiary/30"
+                                  : "bg-secondary/20 text-secondary border border-secondary/30"
                               }`}
                             >
-                              {rec.priority}
+                              {action.type}
                             </span>
-                            <span className="text-[11px] font-mono text-secondary font-medium">
-                              {rec.metric}
+                            <span className="text-[11px] font-mono text-text-muted uppercase">
+                              {action.impact}
                             </span>
                           </div>
+                        </div>
 
-                          <h4 className="text-body-sm font-semibold text-text-primary mb-1.5">
-                            {rec.title}
-                          </h4>
-                          <p className="text-[12px] text-text-secondary leading-relaxed line-clamp-2 mb-4">
-                            {rec.reason}
+                        <div className="flex items-center gap-2 self-start sm:self-auto">
+                          {isCompleted ? (
+                            <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded bg-secondary/15 text-secondary border border-secondary/30 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                              COMPLETED
+                            </span>
+                          ) : isInProgress ? (
+                            <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded bg-primary/15 text-primary-text border border-primary/30 flex items-center gap-1 animate-pulse">
+                              <span className="material-symbols-outlined text-[14px]">autorenew</span>
+                              IN PROGRESS
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-mono font-bold uppercase px-2.5 py-1 rounded bg-surface-high text-text-muted border border-border">
+                              PENDING
+                            </span>
+                          )}
+                          <span className="text-label-xs font-mono text-secondary font-semibold bg-surface-high px-2.5 py-1 rounded-md border border-border">
+                            {action.accuracy}% ACCURACY
+                          </span>
+                          {action.targetFocus && (
+                            <span className="text-[10px] font-mono text-primary-text bg-primary/10 border border-primary/25 px-2 py-0.5 rounded">
+                              TARGET FOCUS
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <h3 className="text-lg sm:text-xl font-bold text-text-primary tracking-tight mb-2">
+                        {isCompleted && (
+                          <span className="text-secondary mr-2">✓</span>
+                        )}
+                        {action.domain} → {action.topic}
+                      </h3>
+
+                      <div className="space-y-2 mb-5 max-w-3xl">
+                        <div className="flex items-center gap-3 text-[12px] font-mono text-text-muted">
+                          <span className="text-text-primary font-semibold">
+                            {action.targetCount} targeted questions
+                          </span>
+                          <span>•</span>
+                          <span>Current accuracy: {action.accuracy}%</span>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-text-muted block mb-0.5">
+                            Why:
+                          </span>
+                          <p className="text-body-sm text-text-secondary leading-relaxed">
+                            {action.reason}
                           </p>
                         </div>
 
-                        <Link
-                          href={rec.route}
-                          className="text-primary-text hover:text-primary font-mono text-[12px] font-medium inline-flex items-center gap-1.5 transition-colors pt-2 border-t border-border/60"
-                        >
-                          <span>{rec.ctaText}</span>
-                          <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-                        </Link>
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-text-muted block mb-0.5">
+                            Evidence:
+                          </span>
+                          <p className="text-[12px] font-mono text-text-muted leading-relaxed">
+                            {action.evidence}
+                          </p>
+                        </div>
+
+                        <div>
+                          <span className="text-[10px] font-mono uppercase text-text-muted block mb-0.5">
+                            Action:
+                          </span>
+                          <p className="text-body-sm text-text-primary font-medium leading-relaxed">
+                            {action.action}
+                          </p>
+                        </div>
                       </div>
-                    ))}
+
+                      <div className="flex flex-wrap items-center gap-3 pt-3 border-t border-border/60">
+                        {isCompleted ? (
+                          <div className="flex items-center gap-3">
+                            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-secondary/10 border border-secondary/30 text-secondary text-body-sm font-semibold font-mono">
+                              <span className="material-symbols-outlined text-[16px]">check</span>
+                              Completed Today
+                            </span>
+                            <Link
+                              href={action.ctaHref}
+                              className="text-text-muted hover:text-text-primary text-[12px] font-mono underline transition-colors"
+                            >
+                              Practice again
+                            </Link>
+                          </div>
+                        ) : isInProgress ? (
+                          <Link
+                            href={action.ctaHref}
+                            className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded-lg hover:bg-primary-text transition-colors inline-flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          >
+                            <span>CONTINUE</span>
+                            <span className="material-symbols-outlined text-[18px]">play_arrow</span>
+                          </Link>
+                        ) : (
+                          <Link
+                            href={action.ctaHref}
+                            className="bg-primary text-text-inverse font-semibold text-body-sm px-6 py-2.5 rounded-lg hover:bg-primary-text transition-colors inline-flex items-center gap-2 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                          >
+                            <span>{action.type === "REVIEW" ? "REVIEW" : "START"}</span>
+                            <span className="material-symbols-outlined text-[18px]">
+                              {action.type === "REVIEW" ? "sync" : "play_arrow"}
+                            </span>
+                          </Link>
+                        )}
+                        <span className="text-[12px] font-mono text-text-muted">
+                          Direct Practice: <span className="text-text-primary">{action.domain}</span>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Preparation History (Optional View) */}
+                {dailyPlan.history && dailyPlan.history.length > 0 && (
+                  <div className="p-4 rounded-xl bg-surface/80 border border-border/80 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-semibold">
+                        PREPARATION HISTORY
+                      </span>
+                      <span className="text-[10px] font-mono text-text-muted">
+                        Verified Daily Completion
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 font-mono text-[12px]">
+                      {dailyPlan.history.map((h) => (
+                        <div
+                          key={h.date}
+                          className="p-2 rounded-lg bg-surface-high border border-border/60 flex flex-col items-center text-center"
+                        >
+                          <span className="text-text-muted text-[10px]">
+                            {new Date(h.date + "T00:00:00").toLocaleDateString(undefined, {
+                              month: "short",
+                              day: "numeric",
+                            })}
+                          </span>
+                          <span className="font-bold text-text-primary mt-0.5">
+                            {h.completedCount} / {h.totalCount}
+                          </span>
+                          <span className="text-[10px] text-secondary">
+                            {h.percent}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
-            ) : null}
+            )}
           </section>
 
           {/* 4. Skill Overview Grid (All 7 Placement Domains) */}
@@ -469,7 +619,7 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-title-md font-semibold text-text-primary">
-                  Skill Overview
+                  Subject Performance
                 </h2>
                 <p className="text-label-xs text-text-muted mt-0.5">
                   Performance across 7 placement domains
@@ -634,91 +784,140 @@ export default async function DashboardPage() {
 
         {/* Right Column (Span 4) */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Placement Target Card (Phase 11A) */}
-          <section className="bg-surface/90 border border-border/80 rounded-2xl p-5 shadow-sm">
-            <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[10px] font-mono uppercase tracking-wider text-text-muted font-bold flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[16px] text-primary">target</span>
+          {/* Placement Target & Preparation Roadmap Card (Section 4 Hierarchy) */}
+          <section className="bg-surface/90 border border-primary/30 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4 relative overflow-hidden">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-mono uppercase tracking-wider text-primary font-bold flex items-center gap-1.5">
+                <span className="material-symbols-outlined text-[16px]">target</span>
                 Placement Target
               </span>
               <Link
                 href="/profile"
                 className="text-primary-text hover:text-primary text-[11px] font-mono font-medium underline transition-colors"
               >
-                {placementTargets.configured ? "Manage Targets" : "Set Your Target"}
+                {placementTargets.configured ? "Manage Targets" : "Set Targets"}
               </Link>
             </div>
 
             {placementTargets.configured ? (
-              <div className="space-y-2.5">
-                {/* Primary Role */}
+              <div className="space-y-3.5">
+                {/* Primary Target Role & Company */}
                 <div>
-                  <span className="text-[10px] font-mono text-text-muted uppercase block mb-0.5">
-                    Primary Role
-                  </span>
-                  <span className="text-body-md font-bold text-text-primary block leading-snug">
-                    {placementTargets.primaryRole?.name || "Not selected"}
-                  </span>
-                  {placementTargets.primaryRole?.category && (
-                    <span className="text-[11px] font-mono text-text-muted">
-                      {placementTargets.primaryRole.category}
-                    </span>
-                  )}
-                </div>
-
-                {/* Primary Company */}
-                {placementTargets.primaryCompany && (
-                  <div>
-                    <span className="text-[10px] font-mono text-text-muted uppercase block mb-0.5">
-                      Primary Company
-                    </span>
-                    <span className="text-body-sm font-semibold text-text-primary block leading-snug">
+                  <h3 className="text-xl font-bold text-text-primary tracking-tight">
+                    {placementTargets.primaryRole?.name || "Target Role Not Selected"}
+                  </h3>
+                  {placementTargets.primaryCompany && (
+                    <p className="text-body-md font-semibold text-primary-text mt-0.5">
                       {placementTargets.primaryCompany.name}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-[11px] font-mono text-text-muted mt-1.5">
+                    <span>
+                      {placementTargets.targetCount}{" "}
+                      {placementTargets.targetCount === 1 ? "target company" : "target companies"}
                     </span>
-                    <span className="text-[11px] font-mono text-text-muted">
-                      {placementTargets.primaryCompany.industry}
+                    <span>·</span>
+                    <span>
+                      {placementTargets.roleCount}{" "}
+                      {placementTargets.roleCount === 1 ? "target role" : "target roles"}
                     </span>
                   </div>
-                )}
-
-                {/* Target Counts */}
-                <div className="pt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] font-mono text-text-muted">
-                  <span>
-                    {placementTargets.roleCount}{" "}
-                    {placementTargets.roleCount === 1 ? "role" : "roles"}
-                  </span>
-                  <span>·</span>
-                  <span>
-                    {placementTargets.targetCount}{" "}
-                    {placementTargets.targetCount === 1 ? "company" : "companies"}
-                  </span>
                 </div>
 
-                {/* Preparation Focus (real readiness data) */}
-                <div className="pt-2 border-t border-border/60 space-y-0.5">
-                  <span className="text-[10px] font-mono text-text-muted uppercase block">
+                {/* Preparation Focus */}
+                <div className="pt-3 border-t border-border/60 space-y-1">
+                  <span className="text-[10px] font-mono uppercase text-text-muted font-bold block">
                     Preparation Focus
                   </span>
-                  <p className="text-body-sm text-text-primary font-semibold text-[12px]">
+                  <div className="text-body-sm font-bold text-text-primary">
                     {prepFocus.label}
-                  </p>
-                  <p className="text-[11px] font-mono text-text-secondary leading-relaxed">
+                  </div>
+                  <p className="text-[12px] font-mono text-text-secondary leading-relaxed">
                     {prepFocus.detail}
                   </p>
                 </div>
+
+                {/* Highest-Priority Next Action */}
+                {dataSufficiency.hasCompletedBaseline && topAction && (
+                  <div className="pt-3 border-t border-border/60 space-y-1">
+                    <span className="text-[10px] font-mono uppercase text-text-muted font-bold block">
+                      Next Action
+                    </span>
+                    <p className="text-[12px] font-medium text-primary-text truncate">
+                      {topAction.title}
+                    </p>
+                  </div>
+                )}
+
+                {/* Target Strategy Alignment (Phase 16) */}
+                {dataSufficiency.hasCompletedBaseline && targetStrategy.readiness.targetScore !== null && (
+                  <div className="pt-3 border-t border-border/60 space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono uppercase text-text-muted font-bold block">
+                        Target Readiness
+                      </span>
+                      <span className="text-[10px] font-mono font-bold uppercase text-secondary">
+                        {targetStrategy.readiness.targetLevel || "ON TRACK"}
+                      </span>
+                    </div>
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-2xl font-bold font-mono text-primary-text">
+                        {targetStrategy.readiness.targetScore}%
+                      </span>
+                      <span className="text-[11px] font-mono text-tertiary">
+                        {targetStrategy.gaps.length} {targetStrategy.gaps.length === 1 ? "priority gap" : "priority gaps"}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-2 pt-1">
+                  <Link
+                    href="/target"
+                    id="dashboard-view-target-strategy-btn"
+                    className="flex-1 bg-surface-high border border-primary/30 text-primary-text font-medium text-[12px] py-2.5 px-3 rounded-lg hover:bg-surface-highest transition-colors flex items-center justify-center gap-1.5 font-mono shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">crosshair</span>
+                    <span>View Target Strategy</span>
+                  </Link>
+                  <Link
+                    href="/roadmap"
+                    id="dashboard-view-roadmap-btn"
+                    className="bg-primary text-text-inverse font-semibold text-[12px] py-2.5 px-4 rounded-lg hover:bg-primary-text transition-colors flex items-center justify-center gap-1.5 shadow-sm font-mono"
+                  >
+                    <span>View Roadmap</span>
+                    <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                  </Link>
+                </div>
               </div>
             ) : (
-              <div className="py-1">
-                <p className="text-body-sm text-text-muted font-mono text-[12px] mb-3">
-                  No target role selected.
+              <div className="space-y-3 py-1">
+                <p className="text-body-sm text-text-muted font-mono text-[12px]">
+                  No target role or company selected. Set placement targets to focus your preparation roadmap.
                 </p>
-                <Link
-                  href="/profile"
-                  className="w-full py-2 px-3 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary-text text-[12px] font-medium transition-colors inline-flex items-center justify-center gap-1.5"
-                >
-                  <span className="material-symbols-outlined text-[15px]">add_circle</span>
-                  <span>Set Your Target</span>
-                </Link>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Link
+                    href="/profile"
+                    className="flex-1 py-2 px-3 rounded-lg border border-primary/30 bg-primary/10 hover:bg-primary/20 text-primary-text text-[12px] font-medium transition-colors inline-flex items-center justify-center gap-1.5"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">add_circle</span>
+                    <span>Set Targets</span>
+                  </Link>
+                  <Link
+                    href="/target"
+                    className="py-2 px-3 rounded-lg border border-border bg-surface-high hover:bg-surface-highest text-text-secondary text-[12px] font-mono transition-colors inline-flex items-center justify-center gap-1"
+                  >
+                    <span>Strategy</span>
+                    <span className="material-symbols-outlined text-[15px]">crosshair</span>
+                  </Link>
+                  <Link
+                    href="/roadmap"
+                    className="py-2 px-3 rounded-lg border border-border bg-surface-high hover:bg-surface-highest text-text-primary text-[12px] font-mono transition-colors inline-flex items-center justify-center gap-1"
+                  >
+                    <span>View Roadmap</span>
+                    <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                  </Link>
+                </div>
               </div>
             )}
           </section>

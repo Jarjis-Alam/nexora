@@ -6,7 +6,12 @@ import { getStudentIntelligence } from "@/server/student-intelligence";
 import { db } from "@/db";
 import { tests } from "@/db/schema";
 import { eq } from "drizzle-orm";
-import { AnalyticsCharts } from "@/components/analytics/analytics-charts";
+import {
+  ReadinessGaugeCard,
+  PerformanceTrendsChart,
+  DifficultyPerformanceCard,
+  TopicStrengthMatrixCard,
+} from "@/components/analytics/analytics-charts";
 
 export default async function AnalyticsPage() {
   const session = await auth();
@@ -36,7 +41,7 @@ export default async function AnalyticsPage() {
 
         <div>
           <h2 className="text-headline-lg font-bold text-text-primary">
-            Your intelligence analytics will appear here.
+            Your analytics will appear here.
           </h2>
           <p className="text-body-md text-text-secondary mt-2 leading-relaxed">
             Complete your baseline assessment to unlock personalized recommendations, readiness driver attribution, and trend detection.
@@ -59,7 +64,7 @@ export default async function AnalyticsPage() {
   const { trend, readiness, recommendations, discipline } = intelligence;
 
   return (
-    <div className="space-y-8 pb-28 pr-28 lg:pr-0">
+    <div className="space-y-10 pb-28 pr-28 lg:pr-0 max-w-7xl mx-auto">
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-border pb-6 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -94,131 +99,175 @@ export default async function AnalyticsPage() {
         </div>
       </div>
 
-      {/* 5 Overview Metric Cards */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
-        {/* Avg Score */}
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-label-xs text-text-muted font-mono uppercase">
-              Avg Score
+      {/* 01. READINESS */}
+      <section aria-labelledby="readiness-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              01
             </span>
-            <span className="material-symbols-outlined text-primary-text text-[18px]">
-              analytics
-            </span>
+            <h2 id="readiness-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              READINESS
+            </h2>
           </div>
-          <span className="text-3xl font-bold font-mono text-text-primary">
-            {analytics.overview.avgScore}%
-          </span>
+          <span className="text-label-xs font-mono text-text-muted">Dynamic Calibration</span>
         </div>
 
-        {/* Avg Accuracy */}
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-label-xs text-text-muted font-mono uppercase">
-              Avg Accuracy
-            </span>
-            <span className="material-symbols-outlined text-secondary text-[18px]">
-              track_changes
-            </span>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          <div className="lg:col-span-5">
+            <ReadinessGaugeCard readiness={analytics.readiness} />
           </div>
-          <span className="text-3xl font-bold font-mono text-text-primary">
-            {analytics.overview.avgAccuracy}%
-          </span>
-        </div>
-
-        {/* Tests Completed */}
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-label-xs text-text-muted font-mono uppercase">
-              Tests Completed
-            </span>
-            <span className="material-symbols-outlined text-text-muted text-[18px]">
-              task
-            </span>
-          </div>
-          <span className="text-3xl font-bold font-mono text-text-primary">
-            {analytics.overview.testsCompleted}
-          </span>
-        </div>
-
-        {/* Questions Attempted */}
-        <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-label-xs text-text-muted font-mono uppercase">
-              Attempted
-            </span>
-            <span className="material-symbols-outlined text-text-muted text-[18px]">
-              format_list_numbered
-            </span>
-          </div>
-          <span className="text-3xl font-bold font-mono text-text-primary">
-            {analytics.overview.questionsAttempted}
-          </span>
-        </div>
-
-        {/* Questions Correct */}
-        <div className="col-span-2 rounded-lg border border-border bg-surface p-4 sm:col-span-1 sm:p-5">
-          <div className="flex justify-between items-start mb-2">
-            <span className="text-label-xs text-text-muted font-mono uppercase">
-              Correct
-            </span>
-            <span className="material-symbols-outlined text-secondary text-[18px]">
-              check_circle
-            </span>
-          </div>
-          <span className="text-3xl font-bold font-mono text-secondary">
-            {analytics.overview.questionsCorrect}
-          </span>
-        </div>
-      </div>
-
-      {/* PHASE 10 INTELLIGENCE SECTION: Drivers, Trajectory & Recommended Actions */}
-      <section className="space-y-6">
-        {/* Trajectory & Drivers Header Card */}
-        <div className="rounded-xl border border-border bg-surface p-5 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-border/70 mb-5">
+          <div className="lg:col-span-7 flex flex-col justify-between rounded-xl border border-border bg-surface p-5 sm:p-6 space-y-4">
             <div>
-              <h2 className="text-title-md font-semibold text-text-primary flex items-center gap-2">
-                <span className="material-symbols-outlined text-[20px] text-primary">psychology</span>
-                Readiness Driver & Trend Analysis
-              </h2>
-              <p className="text-label-xs text-text-muted mt-0.5">
-                Deterministic attribution of what is boosting vs holding back your placement readiness
+              <span className="text-label-xs font-mono uppercase text-text-muted block mb-1">
+                Readiness Model Overview
+              </span>
+              <h3 className="text-title-md font-semibold text-text-primary">
+                Comprehensive Multi-Domain Calibration
+              </h3>
+              <p className="mt-2 text-body-sm text-text-secondary leading-relaxed">
+                Placement readiness is deterministically calculated across Aptitude, DSA, Core CS, and SQL benchmarks. Rather than a simple average, Nexora weights critical domain competencies against technical placement requirements.
               </p>
             </div>
 
-            {/* Trend Trajectory Badge */}
-            <div className="flex items-center gap-2 bg-surface-high px-3 py-1.5 rounded-lg border border-border self-start sm:self-auto font-mono text-label-xs">
-              <span className="text-text-muted uppercase">Overall Trend:</span>
-              <span
-                className={`font-bold flex items-center gap-1 ${
-                  trend.overall === "improving"
-                    ? "text-secondary"
-                    : trend.overall === "declining"
-                    ? "text-error"
-                    : "text-text-primary"
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">
-                  {trend.overall === "improving"
-                    ? "trending_up"
-                    : trend.overall === "declining"
-                    ? "trending_down"
-                    : "trending_flat"}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-border/60 text-center font-mono">
+              <div className="p-3 rounded-lg bg-surface-high border border-border/70">
+                <span className="text-label-xs text-text-muted block">DSA</span>
+                <span className="text-body-md font-bold text-primary-text">
+                  {analytics.readiness.breakdown?.dsa ?? 0}%
                 </span>
-                {trend.overall === "improving"
-                  ? "IMPROVING"
-                  : trend.overall === "declining"
-                  ? "DECLINING"
-                  : trend.overall === "stable"
-                  ? "STABLE"
-                  : "CALIBRATING"}
-              </span>
+              </div>
+              <div className="p-3 rounded-lg bg-surface-high border border-border/70">
+                <span className="text-label-xs text-text-muted block">Core CS</span>
+                <span className="text-body-md font-bold text-primary-text">
+                  {analytics.readiness.breakdown?.coreCs ?? 0}%
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-surface-high border border-border/70">
+                <span className="text-label-xs text-text-muted block">SQL</span>
+                <span className="text-body-md font-bold text-primary-text">
+                  {analytics.readiness.breakdown?.sql ?? 0}%
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-surface-high border border-border/70">
+                <span className="text-label-xs text-text-muted block">Aptitude</span>
+                <span className="text-body-md font-bold text-primary-text">
+                  {analytics.readiness.breakdown?.aptitude ?? 0}%
+                </span>
+              </div>
             </div>
           </div>
+        </div>
+      </section>
 
+      {/* 02. PERFORMANCE */}
+      <section aria-labelledby="performance-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              02
+            </span>
+            <h2 id="performance-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              PERFORMANCE
+            </h2>
+          </div>
+          <span className="text-label-xs font-mono text-text-muted">Aggregate Metrics</span>
+        </div>
+
+        {/* 5 Overview Metric Cards */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 sm:gap-4">
+          <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-label-xs text-text-muted font-mono uppercase">
+                Avg Score
+              </span>
+              <span className="material-symbols-outlined text-primary-text text-[18px]">
+                analytics
+              </span>
+            </div>
+            <span className="text-3xl font-bold font-mono text-text-primary">
+              {analytics.overview.avgScore}%
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-label-xs text-text-muted font-mono uppercase">
+                Avg Accuracy
+              </span>
+              <span className="material-symbols-outlined text-secondary text-[18px]">
+                track_changes
+              </span>
+            </div>
+            <span className="text-3xl font-bold font-mono text-text-primary">
+              {analytics.overview.avgAccuracy}%
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-label-xs text-text-muted font-mono uppercase">
+                Tests Completed
+              </span>
+              <span className="material-symbols-outlined text-text-muted text-[18px]">
+                task
+              </span>
+            </div>
+            <span className="text-3xl font-bold font-mono text-text-primary">
+              {analytics.overview.testsCompleted}
+            </span>
+          </div>
+
+          <div className="rounded-lg border border-border bg-surface p-4 sm:p-5">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-label-xs text-text-muted font-mono uppercase">
+                Attempted
+              </span>
+              <span className="material-symbols-outlined text-text-muted text-[18px]">
+                format_list_numbered
+              </span>
+            </div>
+            <span className="text-3xl font-bold font-mono text-text-primary">
+              {analytics.overview.questionsAttempted}
+            </span>
+          </div>
+
+          <div className="col-span-2 rounded-lg border border-border bg-surface p-4 sm:col-span-1 sm:p-5">
+            <div className="flex justify-between items-start mb-2">
+              <span className="text-label-xs text-text-muted font-mono uppercase">
+                Correct
+              </span>
+              <span className="material-symbols-outlined text-secondary text-[18px]">
+                check_circle
+              </span>
+            </div>
+            <span className="text-3xl font-bold font-mono text-secondary">
+              {analytics.overview.questionsCorrect}
+            </span>
+          </div>
+        </div>
+
+        {/* Difficulty Breakdown */}
+        <DifficultyPerformanceCard difficultyPerformance={analytics.difficultyPerformance} />
+      </section>
+
+      {/* 03. SUBJECTS */}
+      <section aria-labelledby="subjects-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              03
+            </span>
+            <h2 id="subjects-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              SUBJECTS
+            </h2>
+          </div>
+          <span className="text-label-xs font-mono text-text-muted">Domain Attribution Drivers</span>
+        </div>
+
+        <div className="rounded-xl border border-border bg-surface p-5 sm:p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Top Positive Contributors */}
+            {/* Positive Contributors */}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-label-xs font-mono font-semibold text-secondary uppercase">
                 <span className="flex items-center gap-1.5">
@@ -256,7 +305,7 @@ export default async function AnalyticsPage() {
               )}
             </div>
 
-            {/* Top Negative Contributors */}
+            {/* Negative Contributors */}
             <div className="space-y-3">
               <div className="flex items-center justify-between text-label-xs font-mono font-semibold text-error uppercase">
                 <span className="flex items-center gap-1.5">
@@ -294,6 +343,61 @@ export default async function AnalyticsPage() {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* 04. TOPICS */}
+      <section aria-labelledby="topics-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              04
+            </span>
+            <h2 id="topics-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              TOPICS
+            </h2>
+          </div>
+          <span className="text-label-xs font-mono text-text-muted">Granular Topic Matrix</span>
+        </div>
+
+        <TopicStrengthMatrixCard
+          strongestTopics={analytics.strongestTopics}
+          weakestTopics={analytics.weakestTopics}
+        />
+      </section>
+
+      {/* 05. TRENDS */}
+      <section aria-labelledby="trends-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              05
+            </span>
+            <h2 id="trends-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              TRENDS
+            </h2>
+          </div>
+          <span className="text-label-xs font-mono text-text-muted">Historical Trajectory</span>
+        </div>
+
+        <PerformanceTrendsChart
+          performanceOverTime={analytics.performanceOverTime}
+          overallTrend={trend.overall}
+        />
+      </section>
+
+      {/* 06. INTELLIGENCE */}
+      <section aria-labelledby="intelligence-section-heading" className="space-y-4">
+        <div className="flex items-center justify-between border-b border-border/60 pb-2">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-primary/10 text-primary-text border border-primary/20">
+              06
+            </span>
+            <h2 id="intelligence-section-heading" className="text-title-sm font-bold font-mono tracking-wider uppercase text-text-primary">
+              INTELLIGENCE
+            </h2>
+          </div>
+          <span className="text-label-xs font-mono text-text-muted">Prescriptive Recommendations</span>
         </div>
 
         {/* Actionable Recommendations Panel */}
@@ -352,42 +456,47 @@ export default async function AnalyticsPage() {
             </div>
           </div>
         )}
+
+        {/* Exam Strategy & Discipline Bar */}
+        {(discipline.hasNegativeMarkingIssue || discipline.hasUnansweredIssue) && (
+          <div className="p-4 rounded-xl bg-surface border border-tertiary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-body-sm">
+            <div className="flex items-center gap-3">
+              <span className="material-symbols-outlined text-tertiary text-[24px]">flag</span>
+              <div>
+                <span className="font-semibold text-text-primary block">
+                  Exam Strategy Advisory
+                </span>
+                <span className="text-text-secondary text-label-xs font-mono">
+                  {discipline.hasNegativeMarkingIssue && `Penalty loss: ~${discipline.negativeMarkingLossAvg.toFixed(1)} marks/test. `}
+                  {discipline.hasUnansweredIssue && `Blank rate: ${discipline.unansweredRate}%. Calibrate test speed.`}
+                </span>
+              </div>
+            </div>
+            <Link
+              href="/tests"
+              className="text-primary-text font-mono text-[12px] font-semibold hover:text-primary transition-colors flex items-center gap-1 self-end sm:self-auto"
+            >
+              <span>Practice Timed Tests</span>
+              <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+            </Link>
+          </div>
+        )}
       </section>
 
-      {/* Render Recharts Visualizations & Topic Tables */}
-      <AnalyticsCharts data={analytics} />
-
-      {/* Exam Strategy & Discipline Bar */}
-      {(discipline.hasNegativeMarkingIssue || discipline.hasUnansweredIssue) && (
-        <div className="p-4 rounded-xl bg-surface border border-tertiary/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-body-sm">
-          <div className="flex items-center gap-3">
-            <span className="material-symbols-outlined text-tertiary text-[24px]">flag</span>
-            <div>
-              <span className="font-semibold text-text-primary block">
-                Exam Strategy Advisory
-              </span>
-              <span className="text-text-secondary text-label-xs font-mono">
-                {discipline.hasNegativeMarkingIssue && `Penalty loss: ~${discipline.negativeMarkingLossAvg.toFixed(1)} marks/test. `}
-                {discipline.hasUnansweredIssue && `Blank rate: ${discipline.unansweredRate}%. Calibrate test speed.`}
-              </span>
-            </div>
-          </div>
-          <Link
-            href="/tests"
-            className="text-primary-text font-mono text-[12px] font-semibold hover:text-primary transition-colors flex items-center gap-1 self-end sm:self-auto"
-          >
-            <span>Practice Timed Tests</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </Link>
-        </div>
-      )}
-
-      <div className="flex justify-end">
+      {/* Navigation Footer */}
+      <div className="flex flex-wrap justify-end gap-3 pt-2">
+        <Link
+          href="/roadmap"
+          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface px-5 text-body-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-high focus:outline-none focus:ring-2 focus:ring-primary/60"
+        >
+          <span className="material-symbols-outlined text-[18px]">map</span>
+          View Roadmap
+        </Link>
         <Link
           href="/tests"
-          className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-body-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-high focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60"
         >
-          Practice More
+          Practice Tests
           <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
         </Link>
       </div>

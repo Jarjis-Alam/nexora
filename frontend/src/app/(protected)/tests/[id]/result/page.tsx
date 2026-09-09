@@ -17,6 +17,7 @@ import {
 import { eq, and, desc, asc, isNull, sql } from "drizzle-orm";
 import { formatDuration, formatScore } from "@/lib/utils";
 import { DetailedReviewTable } from "@/components/assessment/detailed-review-table";
+import { getDailyExecutionPlan } from "@/server/placement-execution";
 
 export default async function AssessmentResultPage({
   params,
@@ -74,6 +75,9 @@ export default async function AssessmentResultPage({
   if (attempt.status === "in_progress") {
     redirect(`/tests/${testId}/attempt`);
   }
+
+  // 0. Fetch Placement Execution OS Daily Plan
+  const dailyPlan = await getDailyExecutionPlan(session.user.id);
 
   // 1. Fetch per-subject skill breakdown for this attempt
   const subjectScores = await db
@@ -283,6 +287,18 @@ export default async function AssessmentResultPage({
 
   const sectionBreakdowns = Array.from(sectionBreakdownMap.values()).sort(
     (a, b) => a.order - b.order
+  );
+
+  const sortedSubjects = [...subjectScores].sort((a, b) => a.accuracy - b.accuracy);
+  const weakestSubject = sortedSubjects.length > 0 ? sortedSubjects[0] : null;
+
+  const matchingAction = dailyPlan.actions.find(
+    (a) =>
+      a.practiceTarget?.testId === testId ||
+      reviewQuestions.some((q) => q.topicName === a.topic)
+  );
+  const nextAction = dailyPlan.actions.find(
+    (a) => a.status !== "COMPLETED" && a.id !== matchingAction?.id
   );
 
   return (
@@ -510,6 +526,52 @@ export default async function AssessmentResultPage({
         </section>
       )}
 
+      {/* What to Improve Next */}
+      {weakestSubject && (
+        <section className="rounded-xl border border-primary/30 bg-surface p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/70 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-primary-text text-[20px]">
+                trending_up
+              </span>
+              <h3 className="text-title-md font-semibold text-text-primary">
+                What to Improve Next
+              </h3>
+            </div>
+            <span className="text-label-xs font-mono uppercase text-text-muted">
+              Targeted Recommendation
+            </span>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 rounded-lg bg-surface-high border border-border/80">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] font-mono font-semibold uppercase px-2 py-0.5 rounded bg-tertiary/20 text-tertiary border border-tertiary/30">
+                  Focus Area
+                </span>
+                <span className="text-body-md font-bold text-text-primary">
+                  {weakestSubject.subjectName}
+                </span>
+                <span className="font-mono text-label-xs text-text-muted">
+                  ({Math.round(weakestSubject.accuracy)}% accuracy)
+                </span>
+              </div>
+              <p className="mt-1.5 text-body-sm text-text-secondary leading-relaxed">
+                {weakestSubject.subjectName} scored lowest in this attempt. Targeted practice in this domain will yield the highest readiness gain on your personalized placement roadmap.
+              </p>
+            </div>
+
+            <Link
+              href="/roadmap"
+              className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60 shrink-0"
+            >
+              <span>View Roadmap</span>
+              <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+            </Link>
+          </div>
+        </section>
+      )}
+
       {/* Result to next step */}
       <section className="flex flex-col gap-4 rounded-xl border border-primary/20 bg-primary/5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
         <div>
@@ -519,8 +581,8 @@ export default async function AssessmentResultPage({
           </h3>
           <p className="mt-1 text-body-sm text-text-secondary">
             {attempt.testType === "baseline"
-              ? "Review your performance profile or continue from the dashboard."
-              : "Review this attempt or choose another test from the library."}
+              ? "Review your performance profile, consult your roadmap, or continue from the dashboard."
+              : "Review this attempt, check updated roadmap recommendations, or choose another test."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -532,14 +594,90 @@ export default async function AssessmentResultPage({
             <span className="material-symbols-outlined text-[17px]">list_alt</span>
           </Link>
           <Link
-            href={attempt.testType === "baseline" ? "/dashboard" : "/tests"}
+            href="/roadmap"
             className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60"
           >
-            {attempt.testType === "baseline" ? "View Dashboard" : "Take Another Test"}
+            View Roadmap
+            <span className="material-symbols-outlined text-[17px]">map</span>
+          </Link>
+          <Link
+            href={attempt.testType === "baseline" ? "/dashboard" : "/tests"}
+            className="inline-flex h-10 items-center gap-2 rounded-lg border border-border bg-surface px-4 text-body-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-high focus:outline-none focus:ring-2 focus:ring-primary/60"
+          >
+            {attempt.testType === "baseline" ? "Dashboard" : "Take Another Test"}
             <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
           </Link>
         </div>
       </section>
+
+      {/* Execution OS: TODAY'S PLAN Continuation */}
+      {dailyPlan.hasEnoughData && (
+        <section className="rounded-xl border border-secondary/30 bg-surface p-5 sm:p-6 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/70 pb-3">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-secondary text-[20px]">
+                task_alt
+              </span>
+              <h3 className="text-title-md font-bold text-text-primary">
+                TODAY&apos;S PLAN
+              </h3>
+            </div>
+            <span className="text-label-xs font-mono text-secondary uppercase font-semibold">
+              Execution Progress: {dailyPlan.completedCount} / {dailyPlan.totalCount} Complete ({dailyPlan.progressPercent}%)
+            </span>
+          </div>
+
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 p-4 rounded-lg bg-surface-high border border-border/80">
+            <div className="space-y-1">
+              {matchingAction && matchingAction.status === "COMPLETED" ? (
+                <div className="flex items-center gap-2 text-secondary font-mono text-body-sm font-semibold">
+                  <span className="material-symbols-outlined text-[18px]">check_circle</span>
+                  <span>✓ This action is complete</span>
+                  <span className="text-text-muted">({matchingAction.domain} → {matchingAction.topic})</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-text-primary font-mono text-body-sm font-semibold">
+                  <span className="material-symbols-outlined text-[18px] text-secondary">check</span>
+                  <span>Test completed</span>
+                  <span className="text-text-muted">({attempt.accuracy}% accuracy)</span>
+                </div>
+              )}
+
+              {nextAction ? (
+                <div className="text-body-sm text-text-secondary pt-1">
+                  <span className="text-text-muted font-mono text-[11px] uppercase mr-2">Next in Today&apos;s Plan:</span>
+                  <span className="font-bold text-text-primary">{nextAction.domain} → {nextAction.topic}</span>
+                  <span className="font-mono text-[11px] text-text-muted ml-2">({nextAction.targetCount} questions)</span>
+                </div>
+              ) : (
+                <p className="text-body-sm text-secondary font-medium pt-1">
+                  ✓ All actions for today are complete! 100% daily execution achieved.
+                </p>
+              )}
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0">
+              {nextAction ? (
+                <Link
+                  href={nextAction.ctaHref}
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-5 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60"
+                >
+                  <span>CONTINUE TODAY&apos;S PLAN</span>
+                  <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+                </Link>
+              ) : (
+                <Link
+                  href="/dashboard"
+                  className="inline-flex h-10 items-center gap-2 rounded-lg bg-secondary/15 border border-secondary/30 px-5 text-body-sm font-semibold text-secondary transition-colors hover:bg-secondary/25"
+                >
+                  <span>VIEW TODAY&apos;S PROGRESS</span>
+                  <span className="material-symbols-outlined text-[17px]">check</span>
+                </Link>
+              )}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Detailed Review Table with Explanations */}
       <section id="detailed-review" className="rounded-xl border border-border bg-surface p-5 sm:p-6">
@@ -559,10 +697,17 @@ export default async function AssessmentResultPage({
       </section>
 
       {/* Return to Dashboard CTA */}
-      <div className="flex justify-end pt-1">
+      <div className="flex flex-wrap justify-end gap-3 pt-1">
+        <Link
+          href="/roadmap"
+          className="flex h-11 items-center gap-2 rounded-lg border border-border bg-surface px-5 text-body-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-surface-high focus:outline-none focus:ring-2 focus:ring-primary/60"
+        >
+          <span className="material-symbols-outlined text-[18px]">map</span>
+          View Roadmap
+        </Link>
         <Link
           href="/dashboard"
-          className="flex h-11 items-center gap-2 rounded-lg border border-border bg-surface-high px-6 text-body-sm font-semibold text-text-primary transition-colors hover:border-primary hover:bg-primary hover:text-text-inverse focus:outline-none focus:ring-2 focus:ring-primary/60"
+          className="flex h-11 items-center gap-2 rounded-lg bg-primary px-6 text-body-sm font-semibold text-text-inverse transition-colors hover:bg-primary-text focus:outline-none focus:ring-2 focus:ring-primary/60"
         >
           Return to Dashboard
           <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
